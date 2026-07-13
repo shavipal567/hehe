@@ -4,7 +4,7 @@ import {
 } from "react-native";
 import { useStudy } from "../context/StudyContext";
 
-const COLORS = ["#7C6CF6", "#5AC8FA", "#4CD787", "#F6B93C", "#F65C6C", "#9B5DE5"];
+const COLORS = ["#F2578D", "#5AC8FA", "#4CD787", "#F6B93C", "#F65C6C", "#9B5DE5"];
 
 export default function SubjectsScreen() {
   const { subjects, addSubject, removeSubject, profile, setProfile } = useStudy();
@@ -63,15 +63,15 @@ export default function SubjectsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F4F1FF", padding: 20 },
+  container: { flex: 1, backgroundColor: "#FFF0F6", padding: 20 },
   title: { fontSize: 26, fontWeight: "800", color: "#2B2540", marginTop: 12, marginBottom: 12 },
-  label: { color: "#8A83A6", fontWeight: "600", marginBottom: 6 },
+  label: { color: "#B27F92", fontWeight: "600", marginBottom: 6 },
   input: {
     backgroundColor: "#fff", borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12,
   },
   inputRow: { flexDirection: "row" },
   addButton: {
-    backgroundColor: "#7C6CF6", borderRadius: 12, paddingHorizontal: 18, justifyContent: "center",
+    backgroundColor: "#F2578D", borderRadius: 12, paddingHorizontal: 18, justifyContent: "center",
   },
   addButtonText: { color: "#fff", fontWeight: "700" },
   row: {
@@ -80,5 +80,5 @@ const styles = StyleSheet.create({
   },
   dot: { width: 12, height: 12, borderRadius: 6, marginRight: 12 },
   name: { flex: 1, fontWeight: "600", color: "#2B2540" },
-  remove: { color: "#B4AFC9", fontSize: 16, paddingHorizontal: 4 },
+  remove: { color: "#C98CA5", fontSize: 16, paddingHorizontal: 4 },
 });

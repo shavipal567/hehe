@@ -86,26 +86,26 @@ export default function StatsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F4F1FF", padding: 20 },
+  container: { flex: 1, backgroundColor: "#FFF0F6", padding: 20 },
   title: { fontSize: 26, fontWeight: "800", color: "#2B2540", marginTop: 12 },
-  subtitle: { color: "#8A83A6", marginTop: 4, marginBottom: 16 },
+  subtitle: { color: "#B27F92", marginTop: 4, marginBottom: 16 },
   chartCard: {
     backgroundColor: "#fff", borderRadius: 20, padding: 20, height: 200,
   },
   barsRow: { flex: 1, flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end" },
   barColumn: { alignItems: "center", flex: 1 },
   barTrack: {
-    width: 18, height: 130, backgroundColor: "#F0EDFB", borderRadius: 9,
+    width: 18, height: 130, backgroundColor: "#FBDCE7", borderRadius: 9,
     justifyContent: "flex-end", overflow: "hidden",
   },
-  barFill: { width: "100%", backgroundColor: "#7C6CF6", borderRadius: 9 },
-  barLabel: { marginTop: 8, color: "#8A83A6", fontSize: 12, fontWeight: "600" },
+  barFill: { width: "100%", backgroundColor: "#F2578D", borderRadius: 9 },
+  barLabel: { marginTop: 8, color: "#B27F92", fontSize: 12, fontWeight: "600" },
   sectionTitle: { fontSize: 18, fontWeight: "700", color: "#2B2540", marginTop: 24, marginBottom: 12 },
   subjectRow: { marginBottom: 14 },
   subjectHeader: { flexDirection: "row", alignItems: "center", marginBottom: 6 },
   dot: { width: 10, height: 10, borderRadius: 5, marginRight: 8 },
   subjectName: { flex: 1, fontWeight: "600", color: "#2B2540" },
-  subjectHours: { fontWeight: "700", color: "#8A83A6" },
-  progressTrack: { height: 8, backgroundColor: "#E7E2FA", borderRadius: 4, overflow: "hidden" },
+  subjectHours: { fontWeight: "700", color: "#B27F92" },
+  progressTrack: { height: 8, backgroundColor: "#FBDCE7", borderRadius: 4, overflow: "hidden" },
   progressFill: { height: "100%", borderRadius: 4 },
 });

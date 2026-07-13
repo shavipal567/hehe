@@ -4,7 +4,7 @@ import {
 } from "react-native";
 import { useStudy } from "../context/StudyContext";
 
-const PALETTE = ["#7C6CF6", "#5AC8FA", "#4CD787", "#F6B93C", "#F65C6C"];
+const PALETTE = ["#F2578D", "#5AC8FA", "#4CD787", "#F6B93C", "#F65C6C"];
 
 function formatHours(totalSeconds) {
   const hrs = totalSeconds / 3600;
@@ -18,7 +18,7 @@ export default function GroupsScreen() {
   const mySeconds = sessions.reduce((sum, s) => sum + s.seconds, 0);
 
   const board = [
-    { id: "me", name: profile.name || "Me", color: "#7C6CF6", totalSeconds: mySeconds, isMe: true },
+    { id: "me", name: profile.name || "Me", color: "#F2578D", totalSeconds: mySeconds, isMe: true },
     ...groupMembers,
   ].sort((a, b) => b.totalSeconds - a.totalSeconds);
 
@@ -75,29 +75,29 @@ export default function GroupsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F4F1FF", padding: 20 },
+  container: { flex: 1, backgroundColor: "#FFF0F6", padding: 20 },
   title: { fontSize: 26, fontWeight: "800", color: "#2B2540", marginTop: 12 },
-  subtitle: { color: "#8A83A6", marginTop: 4, marginBottom: 8, lineHeight: 18 },
+  subtitle: { color: "#B27F92", marginTop: 4, marginBottom: 8, lineHeight: 18 },
   inputRow: { flexDirection: "row", marginTop: 8 },
   input: {
     flex: 1, backgroundColor: "#fff", borderRadius: 12, paddingHorizontal: 14,
     paddingVertical: 12, marginRight: 8,
   },
   addButton: {
-    backgroundColor: "#7C6CF6", borderRadius: 12, paddingHorizontal: 18, justifyContent: "center",
+    backgroundColor: "#F2578D", borderRadius: 12, paddingHorizontal: 18, justifyContent: "center",
   },
   addButtonText: { color: "#fff", fontWeight: "700" },
   row: {
     flexDirection: "row", alignItems: "center", backgroundColor: "#fff",
     borderRadius: 14, padding: 12, marginBottom: 10,
   },
-  rank: { width: 24, fontWeight: "700", color: "#8A83A6" },
+  rank: { width: 24, fontWeight: "700", color: "#B27F92" },
   avatar: {
     width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center",
     marginRight: 10,
   },
   avatarText: { color: "#fff", fontWeight: "700" },
   name: { flex: 1, fontWeight: "600", color: "#2B2540" },
-  hours: { fontWeight: "700", color: "#7C6CF6", marginRight: 10 },
-  remove: { color: "#B4AFC9", fontSize: 16, paddingHorizontal: 4 },
+  hours: { fontWeight: "700", color: "#F2578D", marginRight: 10 },
+  remove: { color: "#C98CA5", fontSize: 16, paddingHorizontal: 4 },
 });

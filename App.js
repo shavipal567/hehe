@@ -29,7 +29,7 @@ export default function App() {
         <Tab.Navigator
           screenOptions={({ route }) => ({
             headerShown: false,
-            tabBarActiveTintColor: "#7C6CF6",
+            tabBarActiveTintColor: "#F2578D",
             tabBarInactiveTintColor: "#B4AFC9",
             tabBarIcon: () => <Text style={{ fontSize: 18 }}>{ICONS[route.name]}</Text>,
           })}

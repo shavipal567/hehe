@@ -65,30 +65,30 @@ export default function PlannerScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F4F1FF", padding: 20 },
+  container: { flex: 1, backgroundColor: "#FFF0F6", padding: 20 },
   title: { fontSize: 26, fontWeight: "800", color: "#2B2540", marginTop: 12 },
-  subtitle: { color: "#8A83A6", marginTop: 4, marginBottom: 8 },
+  subtitle: { color: "#B27F92", marginTop: 4, marginBottom: 8 },
   inputRow: { flexDirection: "row", marginTop: 12 },
   input: {
     flex: 1, backgroundColor: "#fff", borderRadius: 12, paddingHorizontal: 14,
     paddingVertical: 12, marginRight: 8,
   },
   addButton: {
-    backgroundColor: "#7C6CF6", borderRadius: 12, paddingHorizontal: 18, justifyContent: "center",
+    backgroundColor: "#F2578D", borderRadius: 12, paddingHorizontal: 18, justifyContent: "center",
   },
   addButtonText: { color: "#fff", fontWeight: "700" },
-  empty: { color: "#8A83A6", textAlign: "center", marginTop: 40 },
+  empty: { color: "#B27F92", textAlign: "center", marginTop: 40 },
   todoRow: {
     flexDirection: "row", alignItems: "center", backgroundColor: "#fff",
     borderRadius: 14, padding: 14, marginBottom: 10,
   },
   checkbox: {
-    width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: "#7C6CF6",
+    width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: "#F2578D",
     marginRight: 12, alignItems: "center", justifyContent: "center",
   },
-  checkboxDone: { backgroundColor: "#7C6CF6" },
+  checkboxDone: { backgroundColor: "#F2578D" },
   checkmark: { color: "#fff", fontSize: 13, fontWeight: "700" },
   todoText: { flex: 1, fontSize: 15, color: "#2B2540" },
-  todoTextDone: { textDecorationLine: "line-through", color: "#B4AFC9" },
-  remove: { color: "#B4AFC9", fontSize: 16, paddingHorizontal: 6 },
+  todoTextDone: { textDecorationLine: "line-through", color: "#C98CA5" },
+  remove: { color: "#C98CA5", fontSize: 16, paddingHorizontal: 6 },
 });

@@ -50,10 +50,18 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Study Timer</Text>
+      <Text style={styles.title}>GRIND</Text>
       <Text style={styles.subtitle}>Studying is a marathon, not a sprint.</Text>
 
-      <SubjectPicker subjects={subjects} selectedId={selectedId} onSelect={setSelectedId} />
+      {subjects.length === 0 ? (
+        <View style={styles.emptyCard}>
+          <Text style={styles.emptyText}>
+            No subjects yet — head to the "Subjects" tab below and add your first one to start the timer.
+          </Text>
+        </View>
+      ) : (
+        <SubjectPicker subjects={subjects} selectedId={selectedId} onSelect={setSelectedId} />
+      )}
 
       <View style={styles.timerCard}>
         <Text style={[styles.timerText, { color: currentSubject?.color || "#333" }]}>
@@ -79,9 +87,20 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F4F1FF", padding: 20 },
+  container: { flex: 1, backgroundColor: "#FFF0F6", padding: 20 },
   title: { fontSize: 26, fontWeight: "800", color: "#2B2540", marginTop: 12 },
-  subtitle: { color: "#8A83A6", marginTop: 4, marginBottom: 8 },
+  subtitle: { color: "#B27F92", marginTop: 4, marginBottom: 8 },
+  emptyCard: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 18,
+    marginVertical: 12,
+  },
+  emptyText: {
+    color: "#B27F92",
+    lineHeight: 20,
+    textAlign: "center",
+  },
   timerCard: {
     backgroundColor: "#fff",
     borderRadius: 24,
@@ -94,17 +113,17 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   timerText: { fontSize: 48, fontWeight: "700", fontVariant: ["tabular-nums"] },
-  timerLabel: { marginTop: 8, color: "#8A83A6", fontWeight: "600" },
+  timerLabel: { marginTop: 8, color: "#B27F92", fontWeight: "600" },
   button: {
     marginTop: 24,
     borderRadius: 16,
     paddingVertical: 16,
     alignItems: "center",
   },
-  startButton: { backgroundColor: "#7C6CF6" },
+  startButton: { backgroundColor: "#F2578D" },
   stopButton: { backgroundColor: "#F65C6C" },
   buttonText: { color: "#fff", fontWeight: "700", fontSize: 16 },
   todayBox: { marginTop: 24, alignItems: "center" },
-  todayLabel: { color: "#8A83A6" },
+  todayLabel: { color: "#B27F92" },
   todayValue: { fontSize: 20, fontWeight: "700", color: "#2B2540", marginTop: 4 },
 });

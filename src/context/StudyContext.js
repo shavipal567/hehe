@@ -3,11 +3,8 @@ import { KEYS, loadData, saveData } from "../utils/storage";
 
 const StudyContext = createContext(null);
 
-const DEFAULT_SUBJECTS = [
-  { id: "math", name: "Math", color: "#7C6CF6" },
-  { id: "english", name: "English", color: "#5AC8FA" },
-  { id: "science", name: "Science", color: "#4CD787" },
-];
+// Empty by default so she adds her own subjects on first open (Subjects tab).
+const DEFAULT_SUBJECTS = [];
 
 // A "session" is one finished study block: { id, subjectId, startedAt, seconds, date }
 // A "todo" is one planner item: { id, text, done, date }
@@ -19,7 +16,7 @@ export function StudyProvider({ children }) {
   const [sessions, setSessions] = useState([]);
   const [todos, setTodos] = useState([]);
   const [groupMembers, setGroupMembers] = useState([]);
-  const [profile, setProfile] = useState({ name: "Me" });
+  const [profile, setProfile] = useState({ name: "Dr. Shavi" });
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -29,7 +26,7 @@ export function StudyProvider({ children }) {
         loadData(KEYS.SESSIONS, []),
         loadData(KEYS.TODOS, []),
         loadData(KEYS.GROUP_MEMBERS, []),
-        loadData(KEYS.PROFILE, { name: "Me" }),
+        loadData(KEYS.PROFILE, { name: "Dr. Shavi" }),
       ]);
       setSubjects(s);
       setSessions(sess);
