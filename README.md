@@ -1,45 +1,76 @@
-# Study Together
+# GRIND
 
 A study-tracking app inspired by YPT/Yeolpumta's feature set — subject timer,
-daily planner, study group leaderboard, and stats — built from scratch with
-**no subscriptions or paywalls**. Runs on **iOS, Android, and web** from one
-codebase (Expo + React Native), with all data stored locally on the device
-(no backend/server, no account needed).
+Pomodoro mode, daily planner, calendar, study group leaderboard, and stats —
+built from scratch with **no subscriptions or paywalls**. Runs on **iOS,
+Android, and web** from one codebase (Expo + React Native), with all data
+stored locally on the device (no backend/server, no account needed).
 
 ## Features
 
-- ⏱️ **Timer** — pick a subject, start/stop a stopwatch, sessions are saved automatically
-- 📝 **Planner** — simple daily to-do list
+- ⏱️ **Timer** — pick a subject, start/stop a stopwatch. **Keeps counting accurately
+  even if she switches to another app or locks her phone** — it's timestamp-based,
+  not tick-based, so it recalculates the correct elapsed time the moment she
+  comes back, instead of losing time while backgrounded.
+- 🍅 **Pomodoro mode** — toggle from Stopwatch to Pomodoro on the same screen.
+  Default 25 min focus / 5 min break, both adjustable in the Subjects tab.
+  Auto-logs a session and switches phase when a round finishes.
+- 📝 **Planner** — quick to-do list for today
+- 🗓️ **Calendar** — full month view; tap any day to add/view tasks for that
+  specific date (not just today), with small dots showing which days have
+  tasks or study activity
 - 👥 **Group** — add friends locally and log their study time to compare on a leaderboard
   *(note: since there's no server, "friends" are just profiles you add and update
   yourself on this device — it won't sync live between two different phones.
   See "Optional: adding a real backend" below if you want that later.)*
-- 📊 **Stats** — 7-day bar chart + time-per-subject breakdown
-- 🎯 **Subjects** — add/remove subjects and set your display name
+- 📊 **Stats** — 7-day bar chart + time-per-subject breakdown + pomodoro count
+- 🎯 **Subjects** — add/remove subjects, set display name, adjust Pomodoro lengths
+- 🌸 **One-time welcome screen** — asks her name once on first open, then never
+  shows again; everything after that saves automatically in the background —
+  no repeated logins, nothing to remember to save
+- 🌸💙 **Pink/blue "sky" aesthetic** — soft gradient background, stars, and
+  floating flower accents across every screen
 - No ads, no subscriptions, no in-app purchases
 
 ## Project structure
 
 ```
 study-app/
-├── App.js                     # Navigation + app entry point
+├── App.js                     # Navigation + onboarding gate
 ├── app.json                   # Expo app config (name, icon, bundle id)
 ├── package.json
 ├── babel.config.js
 └── src/
+    ├── theme.js                # Shared colors/palette
     ├── context/
     │   └── StudyContext.js    # Global state + AsyncStorage persistence
     ├── screens/
-    │   ├── HomeScreen.js      # Timer
-    │   ├── PlannerScreen.js   # To-do planner
+    │   ├── WelcomeScreen.js   # One-time setup screen
+    │   ├── HomeScreen.js      # Timer (stopwatch + Pomodoro)
+    │   ├── PlannerScreen.js   # Today's to-do list
+    │   ├── CalendarScreen.js  # Month view + per-day tasks
     │   ├── GroupsScreen.js    # Leaderboard
     │   ├── StatsScreen.js     # Charts
-    │   └── SubjectsScreen.js  # Subject/profile management
+    │   └── SubjectsScreen.js  # Subject/profile/Pomodoro settings
     ├── components/
+    │   ├── SkyBackground.js  # Pink/blue gradient + stars + flowers backdrop
     │   └── SubjectPicker.js
     └── utils/
         └── storage.js         # AsyncStorage read/write helpers
 ```
+
+## A note on the background-safe timer
+
+Phones do eventually fully suspend an app's code if it sits in the background
+for a very long time (this is normal OS battery-saving behavior, not a bug).
+This timer is built to handle that gracefully: it stores the real clock time
+it started at, and recalculates elapsed time from that real timestamp the
+instant the app becomes active again — so even after a long time away, the
+number shown is always correct. What it can't do is show a live-updating
+number while she's not looking at the screen at all (no app can, without a
+persistent background service) — but nothing is lost, and the timer keeps
+running logically the whole time.
+
 
 ## 1. Run it on your computer first
 

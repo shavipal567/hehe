@@ -9,6 +9,8 @@ const KEYS = {
   TODOS: "study_app_todos",
   GROUP_MEMBERS: "study_app_group_members",
   PROFILE: "study_app_profile",
+  POMODORO: "study_app_pomodoro",
+  ONBOARDED: "study_app_onboarded",
 };
 
 export async function loadData(key, fallback) {

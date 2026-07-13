@@ -1,6 +1,8 @@
 import React, { useMemo } from "react";
 import { View, Text, StyleSheet, SafeAreaView, ScrollView } from "react-native";
 import { useStudy } from "../context/StudyContext";
+import SkyBackground from "../components/SkyBackground";
+import { theme, cardShadow } from "../theme";
 
 function getLastNDates(n) {
   const dates = [];
@@ -40,72 +42,79 @@ export default function StatsScreen() {
   }, [sessions, subjects]);
 
   const weekTotal = dailyTotals.reduce((sum, d) => sum + d.total, 0);
+  const pomoCount = sessions.filter((s) => s.mode === "pomodoro").length;
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView>
-        <Text style={styles.title}>Study Stats</Text>
-        <Text style={styles.subtitle}>Last 7 days · {formatHours(weekTotal)}h total</Text>
+    <SkyBackground>
+      <SafeAreaView style={styles.container}>
+        <ScrollView>
+          <Text style={styles.title}>Study Stats</Text>
+          <Text style={styles.subtitle}>Last 7 days · {formatHours(weekTotal)}h total · 🍅 {pomoCount} pomodoros</Text>
 
-        <View style={styles.chartCard}>
-          <View style={styles.barsRow}>
-            {dailyTotals.map((d) => {
-              const heightPct = (d.total / maxSeconds) * 100;
-              const label = new Date(d.date).toLocaleDateString(undefined, { weekday: "short" }).slice(0, 2);
-              return (
-                <View key={d.date} style={styles.barColumn}>
-                  <View style={styles.barTrack}>
-                    <View style={[styles.barFill, { height: `${Math.max(heightPct, 3)}%` }]} />
+          <View style={styles.chartCard}>
+            <View style={styles.barsRow}>
+              {dailyTotals.map((d) => {
+                const heightPct = (d.total / maxSeconds) * 100;
+                const label = new Date(d.date).toLocaleDateString(undefined, { weekday: "short" }).slice(0, 2);
+                return (
+                  <View key={d.date} style={styles.barColumn}>
+                    <View style={styles.barTrack}>
+                      <View style={[styles.barFill, { height: `${Math.max(heightPct, 3)}%` }]} />
+                    </View>
+                    <Text style={styles.barLabel}>{label}</Text>
                   </View>
-                  <Text style={styles.barLabel}>{label}</Text>
-                </View>
-              );
-            })}
-          </View>
-        </View>
-
-        <Text style={styles.sectionTitle}>By subject</Text>
-        {subjectTotals.map((s) => {
-          const pct = weekTotal ? Math.round((s.total / weekTotal) * 100) : 0;
-          return (
-            <View key={s.id} style={styles.subjectRow}>
-              <View style={styles.subjectHeader}>
-                <View style={[styles.dot, { backgroundColor: s.color }]} />
-                <Text style={styles.subjectName}>{s.name}</Text>
-                <Text style={styles.subjectHours}>{formatHours(s.total)}h</Text>
-              </View>
-              <View style={styles.progressTrack}>
-                <View style={[styles.progressFill, { width: `${pct}%`, backgroundColor: s.color }]} />
-              </View>
+                );
+              })}
             </View>
-          );
-        })}
-      </ScrollView>
-    </SafeAreaView>
+          </View>
+
+          <Text style={styles.sectionTitle}>By subject</Text>
+          {subjectTotals.length === 0 ? (
+            <Text style={styles.empty}>Add subjects and log a few sessions to see stats here. 📊🌸</Text>
+          ) : subjectTotals.map((s) => {
+            const pct = weekTotal ? Math.round((s.total / weekTotal) * 100) : 0;
+            return (
+              <View key={s.id} style={styles.subjectRow}>
+                <View style={styles.subjectHeader}>
+                  <View style={[styles.dot, { backgroundColor: s.color }]} />
+                  <Text style={styles.subjectName}>{s.name}</Text>
+                  <Text style={styles.subjectHours}>{formatHours(s.total)}h</Text>
+                </View>
+                <View style={styles.progressTrack}>
+                  <View style={[styles.progressFill, { width: `${pct}%`, backgroundColor: s.color }]} />
+                </View>
+              </View>
+            );
+          })}
+        </ScrollView>
+      </SafeAreaView>
+    </SkyBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FFF0F6", padding: 20 },
-  title: { fontSize: 26, fontWeight: "800", color: "#2B2540", marginTop: 12 },
-  subtitle: { color: "#B27F92", marginTop: 4, marginBottom: 16 },
+  container: { flex: 1, padding: 20 },
+  title: { fontSize: 26, fontWeight: "800", color: theme.text, marginTop: 8 },
+  subtitle: { color: theme.muted, marginTop: 4, marginBottom: 16 },
   chartCard: {
-    backgroundColor: "#fff", borderRadius: 20, padding: 20, height: 200,
+    backgroundColor: theme.cardBg, borderRadius: 20, padding: 20, height: 200,
+    borderWidth: 1, borderColor: theme.cardBorder, ...cardShadow,
   },
   barsRow: { flex: 1, flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end" },
   barColumn: { alignItems: "center", flex: 1 },
   barTrack: {
-    width: 18, height: 130, backgroundColor: "#FBDCE7", borderRadius: 9,
+    width: 18, height: 130, backgroundColor: "rgba(242,87,141,0.12)", borderRadius: 9,
     justifyContent: "flex-end", overflow: "hidden",
   },
-  barFill: { width: "100%", backgroundColor: "#F2578D", borderRadius: 9 },
-  barLabel: { marginTop: 8, color: "#B27F92", fontSize: 12, fontWeight: "600" },
-  sectionTitle: { fontSize: 18, fontWeight: "700", color: "#2B2540", marginTop: 24, marginBottom: 12 },
+  barFill: { width: "100%", backgroundColor: theme.primary, borderRadius: 9 },
+  barLabel: { marginTop: 8, color: theme.muted, fontSize: 12, fontWeight: "600" },
+  sectionTitle: { fontSize: 18, fontWeight: "700", color: theme.text, marginTop: 24, marginBottom: 12 },
+  empty: { color: theme.muted, textAlign: "center", marginTop: 12 },
   subjectRow: { marginBottom: 14 },
   subjectHeader: { flexDirection: "row", alignItems: "center", marginBottom: 6 },
   dot: { width: 10, height: 10, borderRadius: 5, marginRight: 8 },
-  subjectName: { flex: 1, fontWeight: "600", color: "#2B2540" },
-  subjectHours: { fontWeight: "700", color: "#B27F92" },
-  progressTrack: { height: 8, backgroundColor: "#FBDCE7", borderRadius: 4, overflow: "hidden" },
+  subjectName: { flex: 1, fontWeight: "600", color: theme.text },
+  subjectHours: { fontWeight: "700", color: theme.muted },
+  progressTrack: { height: 8, backgroundColor: "rgba(242,87,141,0.12)", borderRadius: 4, overflow: "hidden" },
   progressFill: { height: "100%", borderRadius: 4 },
 });

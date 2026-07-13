@@ -1,13 +1,20 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { KEYS, loadData, saveData } from "../utils/storage";
+import { SUBJECT_PALETTE } from "../theme";
 
 const StudyContext = createContext(null);
 
 // Empty by default so she adds her own subjects on first open (Subjects tab).
 const DEFAULT_SUBJECTS = [];
+const DEFAULT_POMODORO = { workMinutes: 25, breakMinutes: 5 };
 
-// A "session" is one finished study block: { id, subjectId, startedAt, seconds, date }
-// A "todo" is one planner item: { id, text, done, date }
+function todayStr() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+// A "session" is one finished study block: { id, subjectId, seconds, mode, date }
+// A "todo" is one planner item: { id, text, done, date } — date is editable now so
+// the Calendar screen can add/view todos for any day, not just today.
 // A "group member" is a locally-added friend you track manually since there is
 // no server in this build: { id, name, color, totalSeconds }
 
@@ -17,22 +24,28 @@ export function StudyProvider({ children }) {
   const [todos, setTodos] = useState([]);
   const [groupMembers, setGroupMembers] = useState([]);
   const [profile, setProfile] = useState({ name: "Dr. Shavi" });
+  const [pomodoroSettings, setPomodoroSettings] = useState(DEFAULT_POMODORO);
+  const [onboarded, setOnboardedState] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     (async () => {
-      const [s, sess, t, g, p] = await Promise.all([
+      const [s, sess, t, g, p, pomo, onb] = await Promise.all([
         loadData(KEYS.SUBJECTS, DEFAULT_SUBJECTS),
         loadData(KEYS.SESSIONS, []),
         loadData(KEYS.TODOS, []),
         loadData(KEYS.GROUP_MEMBERS, []),
         loadData(KEYS.PROFILE, { name: "Dr. Shavi" }),
+        loadData(KEYS.POMODORO, DEFAULT_POMODORO),
+        loadData(KEYS.ONBOARDED, false),
       ]);
       setSubjects(s);
       setSessions(sess);
       setTodos(t);
       setGroupMembers(g);
       setProfile(p);
+      setPomodoroSettings(pomo);
+      setOnboardedState(onb);
       setLoaded(true);
     })();
   }, []);
@@ -42,31 +55,31 @@ export function StudyProvider({ children }) {
   useEffect(() => { if (loaded) saveData(KEYS.TODOS, todos); }, [todos, loaded]);
   useEffect(() => { if (loaded) saveData(KEYS.GROUP_MEMBERS, groupMembers); }, [groupMembers, loaded]);
   useEffect(() => { if (loaded) saveData(KEYS.PROFILE, profile); }, [profile, loaded]);
+  useEffect(() => { if (loaded) saveData(KEYS.POMODORO, pomodoroSettings); }, [pomodoroSettings, loaded]);
+  useEffect(() => { if (loaded) saveData(KEYS.ONBOARDED, onboarded); }, [onboarded, loaded]);
 
-  const addSession = useCallback((subjectId, seconds) => {
+  const addSession = useCallback((subjectId, seconds, mode = "stopwatch") => {
     setSessions((prev) => [
       ...prev,
-      {
-        id: Date.now().toString(),
-        subjectId,
-        seconds,
-        date: new Date().toISOString().slice(0, 10),
-      },
+      { id: Date.now().toString(), subjectId, seconds, mode, date: todayStr() },
     ]);
   }, []);
 
   const addSubject = useCallback((name, color) => {
-    setSubjects((prev) => [...prev, { id: Date.now().toString(), name, color }]);
+    setSubjects((prev) => [
+      ...prev,
+      { id: Date.now().toString(), name, color: color || SUBJECT_PALETTE[prev.length % SUBJECT_PALETTE.length] },
+    ]);
   }, []);
 
   const removeSubject = useCallback((id) => {
     setSubjects((prev) => prev.filter((s) => s.id !== id));
   }, []);
 
-  const addTodo = useCallback((text) => {
+  const addTodo = useCallback((text, date) => {
     setTodos((prev) => [
       ...prev,
-      { id: Date.now().toString(), text, done: false, date: new Date().toISOString().slice(0, 10) },
+      { id: Date.now().toString(), text, done: false, date: date || todayStr() },
     ]);
   }, []);
 
@@ -95,12 +108,17 @@ export function StudyProvider({ children }) {
     setGroupMembers((prev) => prev.filter((m) => m.id !== id));
   }, []);
 
+  const completeOnboarding = useCallback((name) => {
+    if (name && name.trim()) setProfile((p) => ({ ...p, name: name.trim() }));
+    setOnboardedState(true);
+  }, []);
+
   const value = {
-    subjects, sessions, todos, groupMembers, profile, loaded,
+    subjects, sessions, todos, groupMembers, profile, pomodoroSettings, onboarded, loaded,
     addSession, addSubject, removeSubject,
     addTodo, toggleTodo, removeTodo,
     addGroupMember, logGroupMemberTime, removeGroupMember,
-    setProfile,
+    setProfile, setPomodoroSettings, completeOnboarding,
   };
 
   return <StudyContext.Provider value={value}>{children}</StudyContext.Provider>;

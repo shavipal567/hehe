@@ -1,5 +1,6 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from "react-native";
+import { theme } from "../theme";
 
 export default function SubjectPicker({ subjects, selectedId, onSelect }) {
   return (
@@ -32,6 +33,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1.5,
     marginRight: 8,
+    backgroundColor: "rgba(255,255,255,0.6)",
   },
-  chipText: { fontWeight: "600", color: "#333" },
+  chipText: { fontWeight: "600", color: theme.text },
 });
