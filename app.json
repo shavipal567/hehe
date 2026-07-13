@@ -7,6 +7,8 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
       "backgroundColor": "#FFF0F6"
     },
     "assetBundlePatterns": ["**/*"],
@@ -15,10 +17,15 @@
       "bundleIdentifier": "com.yourname.studytogether"
     },
     "android": {
-      "package": "com.yourname.studytogether"
+      "package": "com.yourname.studytogether",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FFF0F6"
+      }
     },
     "web": {
-      "bundler": "metro"
+      "bundler": "metro",
+      "favicon": "./assets/favicon.png"
     }
   }
 }
