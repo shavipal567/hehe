@@ -11,7 +11,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#FFF0F6"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.yourname.studytogether"
@@ -26,6 +28,7 @@
     "web": {
       "bundler": "metro",
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": []
   }
 }
