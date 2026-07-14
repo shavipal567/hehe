@@ -22,6 +22,21 @@ export const MOTIVATIONAL_MESSAGES = [
   "Whatever's weighing on you — you don't have to carry it alone. I'm always just a message away.",
   "Future you is going to look back at this moment and be so proud of how you kept going.",
   "You are doing better than you think you are. Truly.",
+  "You don't owe anyone a version of yourself that isn't tired sometimes. Tired is allowed.",
+  "Some days are just about showing up, not showing off. Today, showing up is more than enough.",
+  "I know this feels like the whole world right now, but I promise you — there's so much good waiting on the other side of it.",
+  "You're allowed to go slow. Slow progress is still progress, and I'm cheering for every bit of it.",
+  "If no one's told you today: you are so capable, and so loved, exactly as you are right now.",
+  "Put the book down for five minutes. Look out a window. Come back when you're ready — it'll wait.",
+  "You've handled 100% of your worst days. Whatever today is throwing at you, you already have what it takes.",
+  "It's okay if today wasn't your most productive day. Tomorrow gets a fresh start, and so do you.",
+  "You don't have to earn rest by finishing everything first. Rest whenever you need it — no conditions.",
+  "I'm not just proud of your results, I'm proud of how hard you try even when it's tough. That's the real thing.",
+  "Whatever grade, whatever outcome — it doesn't change how much I love you or how far you've already come.",
+  "Sometimes the bravest thing you can do is just take a break without guilt. Go ahead, you've earned it.",
+  "You are not your to-do list. You are so much bigger and more wonderful than that.",
+  "Breathe in something calming, breathe out the pressure. You're doing okay, even when it doesn't feel like it.",
+  "I know stress can make everything feel urgent and huge — but you are safe, and this moment will pass.",
 ];
 
 export function getRandomMessage(excludeIndex = -1) {

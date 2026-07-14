@@ -6,7 +6,7 @@ import { theme } from "../theme";
 
 const { height: SCREEN_H } = Dimensions.get("window");
 
-// A richer, more "alive" pink/blue sky backdrop: a soft multi-stop gradient,
+// A richer, "alive" pink/blue sky backdrop: a soft multi-stop gradient,
 // glowing color blobs for depth, rolling hill silhouettes (a full scenic
 // cover rather than a flat color), a scatter of gently twinkling stars, a
 // tiny crescent moon, slowly bobbing flower/sparkle emoji, and hearts that
@@ -93,12 +93,10 @@ export default function SkyBackground({ children, showFloaters = true }) {
         style={StyleSheet.absoluteFill}
       />
 
-      {/* Soft glowing color blobs for depth */}
       <View style={styles.blobPinkTop} pointerEvents="none" />
       <View style={styles.blobBlueBottom} pointerEvents="none" />
       <View style={styles.blobLavenderMid} pointerEvents="none" />
 
-      {/* Twinkling stars + tiny crescent moon */}
       <Animated.View style={[StyleSheet.absoluteFill, { opacity: twinkle.interpolate({ inputRange: [0, 1], outputRange: [0.45, 1] }) }]} pointerEvents="none">
         <Svg style={StyleSheet.absoluteFill} viewBox="0 0 380 200">
           {STARS.filter((s) => s.phase === 0).map((s, i) => (
@@ -119,7 +117,6 @@ export default function SkyBackground({ children, showFloaters = true }) {
         </Svg>
       </Animated.View>
 
-      {/* Rolling hill silhouettes anchored to the bottom, for a full scenic cover feel */}
       <Svg
         style={styles.hills}
         viewBox="0 0 400 140"
@@ -136,7 +133,6 @@ export default function SkyBackground({ children, showFloaters = true }) {
         />
       </Svg>
 
-      {/* Hearts drifting gently upward for a "live" feel */}
       {HEARTS.map((h, i) => (
         <DriftingHeart key={i} left={h.left} delay={h.delay} size={h.size} />
       ))}

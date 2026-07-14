@@ -8,8 +8,8 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "predeploy": "expo export -p web",
-    "deploy": "gh-pages -d dist"
+    "predeploy": "expo export -p web && touch dist/.nojekyll",
+    "deploy": "gh-pages -d dist --dotfiles"
   },
   "dependencies": {
     "@expo/metro-runtime": "~6.1.2",
@@ -17,6 +17,7 @@
     "@react-navigation/bottom-tabs": "^6.5.20",
     "@react-navigation/native": "^6.1.17",
     "expo": "~54.0.0",
+    "expo-av": "~16.0.8",
     "expo-linear-gradient": "~15.0.7",
     "expo-status-bar": "~3.0.9",
     "react": "19.1.0",

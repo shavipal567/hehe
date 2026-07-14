@@ -97,7 +97,7 @@ export default function SubjectsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20 },
-  title: { fontSize: 26, fontWeight: "800", color: theme.text, marginTop: 8, marginBottom: 12 },
+  title: { fontSize: 28, fontWeight: "800", color: theme.text, marginTop: 8, marginBottom: 12 },
   label: { color: theme.muted, fontWeight: "600", marginBottom: 6 },
   input: {
     backgroundColor: "#fff", borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12,

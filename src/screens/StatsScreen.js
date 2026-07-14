@@ -94,7 +94,7 @@ export default function StatsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20 },
-  title: { fontSize: 26, fontWeight: "800", color: theme.text, marginTop: 8 },
+  title: { fontSize: 28, fontWeight: "800", color: theme.text, marginTop: 8 },
   subtitle: { color: theme.muted, marginTop: 4, marginBottom: 16 },
   chartCard: {
     backgroundColor: theme.cardBg, borderRadius: 20, padding: 20, height: 200,

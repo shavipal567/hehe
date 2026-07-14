@@ -12,6 +12,7 @@ import GroupsScreen from "./src/screens/GroupsScreen";
 import StatsScreen from "./src/screens/StatsScreen";
 import SubjectsScreen from "./src/screens/SubjectsScreen";
 import ForYouScreen from "./src/screens/ForYouScreen";
+import NotesScreen from "./src/screens/NotesScreen";
 import WelcomeScreen from "./src/screens/WelcomeScreen";
 import { theme } from "./src/theme";
 
@@ -21,6 +22,7 @@ const ICONS = {
   Timer: "⏱️",
   Planner: "📝",
   Calendar: "🗓️",
+  Notes: "📌",
   "For You": "💗",
   Group: "👥",
   Stats: "📊",
@@ -41,6 +43,7 @@ function MainTabs() {
       <Tab.Screen name="Timer" component={HomeScreen} />
       <Tab.Screen name="Planner" component={PlannerScreen} />
       <Tab.Screen name="Calendar" component={CalendarScreen} />
+      <Tab.Screen name="Notes" component={NotesScreen} />
       <Tab.Screen name="For You" component={ForYouScreen} />
       <Tab.Screen name="Group" component={GroupsScreen} />
       <Tab.Screen name="Stats" component={StatsScreen} />

@@ -1,5 +1,6 @@
 import React, { useRef, useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Animated } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import SkyBackground from "../components/SkyBackground";
 import { theme, cardShadow } from "../theme";
 import { getRandomMessage } from "../motivation";
@@ -39,10 +40,17 @@ export default function ForYouScreen() {
           </Animated.View>
         )}
 
-        <TouchableOpacity style={styles.button} onPress={showMessage}>
-          <Text style={styles.buttonText}>
-            {current ? "Send me another 🌸" : "I need a little pick-me-up 💗"}
-          </Text>
+        <TouchableOpacity style={styles.buttonWrap} onPress={showMessage} activeOpacity={0.85}>
+          <LinearGradient
+            colors={[theme.primary, "#B94E8C"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.button}
+          >
+            <Text style={styles.buttonText}>
+              {current ? "Send me another 🌸" : "I need a little pick-me-up 💗"}
+            </Text>
+          </LinearGradient>
         </TouchableOpacity>
 
         <Text style={styles.footnote}>
@@ -71,7 +79,11 @@ const styles = StyleSheet.create({
   messageText: { color: theme.text, fontSize: 17, lineHeight: 26, fontWeight: "500" },
   signature: { color: theme.primary, fontWeight: "700", marginTop: 16, textAlign: "right", fontSize: 15 },
   button: {
-    backgroundColor: theme.primary, borderRadius: 18, paddingVertical: 16, alignItems: "center", marginTop: 24,
+    borderRadius: 18, paddingVertical: 16, alignItems: "center",
+  },
+  buttonWrap: {
+    marginTop: 24, borderRadius: 18,
+    shadowColor: theme.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.35, shadowRadius: 12, elevation: 6,
   },
   buttonText: { color: "#fff", fontWeight: "700", fontSize: 15 },
   footnote: { color: theme.muted, fontSize: 12, textAlign: "center", marginTop: 18 },

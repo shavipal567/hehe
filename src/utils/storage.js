@@ -11,6 +11,7 @@ const KEYS = {
   PROFILE: "study_app_profile",
   POMODORO: "study_app_pomodoro",
   ONBOARDED: "study_app_onboarded",
+  NOTES: "study_app_notes",
 };
 
 export async function loadData(key, fallback) {

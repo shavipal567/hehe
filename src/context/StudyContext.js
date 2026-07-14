@@ -25,12 +25,13 @@ export function StudyProvider({ children }) {
   const [groupMembers, setGroupMembers] = useState([]);
   const [profile, setProfile] = useState({ name: "Dr. Shavi" });
   const [pomodoroSettings, setPomodoroSettings] = useState(DEFAULT_POMODORO);
+  const [notes, setNotes] = useState([]);
   const [onboarded, setOnboardedState] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     (async () => {
-      const [s, sess, t, g, p, pomo, onb] = await Promise.all([
+      const [s, sess, t, g, p, pomo, onb, n] = await Promise.all([
         loadData(KEYS.SUBJECTS, DEFAULT_SUBJECTS),
         loadData(KEYS.SESSIONS, []),
         loadData(KEYS.TODOS, []),
@@ -38,6 +39,7 @@ export function StudyProvider({ children }) {
         loadData(KEYS.PROFILE, { name: "Dr. Shavi" }),
         loadData(KEYS.POMODORO, DEFAULT_POMODORO),
         loadData(KEYS.ONBOARDED, false),
+        loadData(KEYS.NOTES, []),
       ]);
       setSubjects(s);
       setSessions(sess);
@@ -46,6 +48,7 @@ export function StudyProvider({ children }) {
       setProfile(p);
       setPomodoroSettings(pomo);
       setOnboardedState(onb);
+      setNotes(n);
       setLoaded(true);
     })();
   }, []);
@@ -57,6 +60,7 @@ export function StudyProvider({ children }) {
   useEffect(() => { if (loaded) saveData(KEYS.PROFILE, profile); }, [profile, loaded]);
   useEffect(() => { if (loaded) saveData(KEYS.POMODORO, pomodoroSettings); }, [pomodoroSettings, loaded]);
   useEffect(() => { if (loaded) saveData(KEYS.ONBOARDED, onboarded); }, [onboarded, loaded]);
+  useEffect(() => { if (loaded) saveData(KEYS.NOTES, notes); }, [notes, loaded]);
 
   const addSession = useCallback((subjectId, seconds, mode = "stopwatch") => {
     setSessions((prev) => [
@@ -113,11 +117,34 @@ export function StudyProvider({ children }) {
     setOnboardedState(true);
   }, []);
 
+  const NOTE_COLORS = ["#FFF3B0", "#FFD6E8", "#D6EAFF", "#E3FFD6", "#F0D6FF"];
+
+  const addNote = useCallback((text) => {
+    setNotes((prev) => [
+      ...prev,
+      {
+        id: Date.now().toString(),
+        text,
+        color: NOTE_COLORS[prev.length % NOTE_COLORS.length],
+        rotation: Math.round((Math.random() - 0.5) * 8),
+      },
+    ]);
+  }, []);
+
+  const updateNote = useCallback((id, text) => {
+    setNotes((prev) => prev.map((n) => (n.id === id ? { ...n, text } : n)));
+  }, []);
+
+  const removeNote = useCallback((id) => {
+    setNotes((prev) => prev.filter((n) => n.id !== id));
+  }, []);
+
   const value = {
-    subjects, sessions, todos, groupMembers, profile, pomodoroSettings, onboarded, loaded,
+    subjects, sessions, todos, groupMembers, profile, pomodoroSettings, notes, onboarded, loaded,
     addSession, addSubject, removeSubject,
     addTodo, toggleTodo, removeTodo,
     addGroupMember, logGroupMemberTime, removeGroupMember,
+    addNote, updateNote, removeNote,
     setProfile, setPomodoroSettings, completeOnboarding,
   };
 

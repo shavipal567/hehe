@@ -146,7 +146,7 @@ export default function CalendarScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20 },
-  title: { fontSize: 26, fontWeight: "800", color: theme.text, marginTop: 8 },
+  title: { fontSize: 28, fontWeight: "800", color: theme.text, marginTop: 8 },
   subtitle: { color: theme.muted, marginTop: 4, marginBottom: 12 },
   monthHeader: { flexDirection: "row", alignItems: "center", justifyContent: "center", marginBottom: 8 },
   navButton: { paddingHorizontal: 18, paddingVertical: 4 },

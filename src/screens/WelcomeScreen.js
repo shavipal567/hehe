@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { useStudy } from "../context/StudyContext";
 import SkyBackground from "../components/SkyBackground";
 import { theme, cardShadow } from "../theme";
@@ -36,11 +37,15 @@ export default function WelcomeScreen() {
               autoFocus
             />
 
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => completeOnboarding(name)}
-            >
-              <Text style={styles.buttonText}>Let's get started</Text>
+            <TouchableOpacity style={styles.buttonWrap} onPress={() => completeOnboarding(name)} activeOpacity={0.85}>
+              <LinearGradient
+                colors={[theme.primary, "#B94E8C"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.button}
+              >
+                <Text style={styles.buttonText}>Let's get started</Text>
+              </LinearGradient>
             </TouchableOpacity>
 
             <Text style={styles.footnote}>
@@ -71,7 +76,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff", borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, fontSize: 16,
   },
   button: {
-    backgroundColor: theme.primary, borderRadius: 16, paddingVertical: 16, alignItems: "center", marginTop: 20,
+    borderRadius: 16, paddingVertical: 16, alignItems: "center",
+  },
+  buttonWrap: {
+    marginTop: 20, borderRadius: 16,
+    shadowColor: theme.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.35, shadowRadius: 12, elevation: 6,
   },
   buttonText: { color: "#fff", fontWeight: "700", fontSize: 16 },
   footnote: { color: theme.muted, fontSize: 12, textAlign: "center", marginTop: 16 },
