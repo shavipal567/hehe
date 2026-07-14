@@ -12,6 +12,8 @@ const KEYS = {
   POMODORO: "study_app_pomodoro",
   ONBOARDED: "study_app_onboarded",
   NOTES: "study_app_notes",
+  USERNAME: "study_app_username",
+  FRIENDS: "study_app_friends",
 };
 
 export async function loadData(key, fallback) {

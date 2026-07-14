@@ -5,11 +5,12 @@ import { useStudy } from "../context/StudyContext";
 import SubjectPicker from "../components/SubjectPicker";
 import SkyBackground from "../components/SkyBackground";
 import PomodoroRing from "../components/PomodoroRing";
-import { playPomodoroAlarm } from "../utils/alarm";
+import { startPomodoroAlarm, stopPomodoroAlarm } from "../utils/alarm";
 import { theme, cardShadow } from "../theme";
 
-const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
+const { width: SCREEN_W } = Dimensions.get("window");
 const RING_SIZE = Math.min(SCREEN_W * 0.78, 300);
+const SNOOZE_SECONDS = 5 * 60;
 
 function formatTime(totalSeconds) {
   const h = Math.floor(totalSeconds / 3600);
@@ -39,15 +40,37 @@ export default function HomeScreen() {
   const [displaySeconds, setDisplaySeconds] = useState(0);
   const [pomoPhase, setPomoPhase] = useState("work"); // "work" | "break"
   const [pomoCyclesDone, setPomoCyclesDone] = useState(0);
+  const [alarmActive, setAlarmActive] = useState(false);
+  const [alarmMessage, setAlarmMessage] = useState("");
 
   const startedAtRef = useRef(null);
   const accumulatedRef = useRef(0);
   const pomoTargetRef = useRef(null);
   const tickRef = useRef(null);
+  const justCompletedPhaseRef = useRef("work");
 
   useEffect(() => {
     if (!selectedId && subjects.length) setSelectedId(subjects[0].id);
   }, [subjects]);
+
+  const handlePomoPhaseEnd = useCallback(() => {
+    setRunning(false);
+    if (pomoPhase === "work") {
+      if (selectedId) addSession(selectedId, pomodoroSettings.workMinutes * 60, "pomodoro");
+      setPomoCyclesDone((c) => c + 1);
+      justCompletedPhaseRef.current = "work";
+      setPomoPhase("break");
+      setDisplaySeconds(pomodoroSettings.breakMinutes * 60);
+      setAlarmMessage("Focus session complete! Time for a 🌸 break.");
+    } else {
+      justCompletedPhaseRef.current = "break";
+      setPomoPhase("work");
+      setDisplaySeconds(pomodoroSettings.workMinutes * 60);
+      setAlarmMessage("Break's over! Ready to focus again? 🎯");
+    }
+    setAlarmActive(true);
+    startPomodoroAlarm();
+  }, [pomoPhase, selectedId, pomodoroSettings]);
 
   const recompute = useCallback(() => {
     if (!running) return;
@@ -61,7 +84,7 @@ export default function HomeScreen() {
         handlePomoPhaseEnd();
       }
     }
-  }, [running, mode]);
+  }, [running, mode, handlePomoPhaseEnd]);
 
   useEffect(() => {
     const sub = AppState.addEventListener("change", (state) => {
@@ -78,21 +101,6 @@ export default function HomeScreen() {
     }
     return () => clearInterval(tickRef.current);
   }, [running, recompute]);
-
-  const handlePomoPhaseEnd = () => {
-    playPomodoroAlarm();
-    if (pomoPhase === "work") {
-      if (selectedId) addSession(selectedId, pomodoroSettings.workMinutes * 60, "pomodoro");
-      setPomoCyclesDone((c) => c + 1);
-      setPomoPhase("break");
-      pomoTargetRef.current = Date.now() + pomodoroSettings.breakMinutes * 60 * 1000;
-      setDisplaySeconds(pomodoroSettings.breakMinutes * 60);
-    } else {
-      setPomoPhase("work");
-      pomoTargetRef.current = Date.now() + pomodoroSettings.workMinutes * 60 * 1000;
-      setDisplaySeconds(pomodoroSettings.workMinutes * 60);
-    }
-  };
 
   const todaySeconds = sessions
     .filter((s) => s.date === new Date().toISOString().slice(0, 10))
@@ -111,18 +119,35 @@ export default function HomeScreen() {
     }
   };
 
+  // Start/Pause/Resume, all in one: if paused mid-phase, resuming continues
+  // from wherever displaySeconds currently sits (not a full reset).
   const handleStartStopPomodoro = () => {
     if (running) {
       setRunning(false);
     } else {
-      pomoTargetRef.current = Date.now() + (pomoPhase === "work" ? pomodoroSettings.workMinutes : pomodoroSettings.breakMinutes) * 60 * 1000;
-      setDisplaySeconds((pomoPhase === "work" ? pomodoroSettings.workMinutes : pomodoroSettings.breakMinutes) * 60);
+      const resumeSeconds = displaySeconds > 0 ? displaySeconds : totalPhaseSecondsFor(pomoPhase);
+      pomoTargetRef.current = Date.now() + resumeSeconds * 1000;
+      setDisplaySeconds(resumeSeconds);
       setRunning(true);
     }
   };
 
+  // Restarts the CURRENT phase (focus or break, whichever is active) back to
+  // its full length — works whether the timer is running or paused.
+  const handleRestartPomodoro = () => {
+    const total = totalPhaseSecondsFor(pomoPhase);
+    setDisplaySeconds(total);
+    if (running) {
+      pomoTargetRef.current = Date.now() + total * 1000;
+    }
+  };
+
+  function totalPhaseSecondsFor(phase) {
+    return (phase === "work" ? pomodoroSettings.workMinutes : pomodoroSettings.breakMinutes) * 60;
+  }
+
   const switchMode = (m) => {
-    if (running) return;
+    if (running || alarmActive) return;
     setMode(m);
     if (m === "pomodoro") {
       setPomoPhase("work");
@@ -132,9 +157,29 @@ export default function HomeScreen() {
     }
   };
 
+  // Snooze = "not ready yet" — give a few more minutes of whatever phase just
+  // ended (extend focus if focus just ended, extend break if break just ended)
+  // rather than jumping into the next phase.
+  const handleSnooze = () => {
+    stopPomodoroAlarm();
+    setAlarmActive(false);
+    const revertPhase = justCompletedPhaseRef.current;
+    setPomoPhase(revertPhase);
+    setDisplaySeconds(SNOOZE_SECONDS);
+    pomoTargetRef.current = Date.now() + SNOOZE_SECONDS * 1000;
+    setRunning(true);
+  };
+
+  // Stop = acknowledge and move on. The next phase is already queued up
+  // (paused, full duration) — she starts it herself whenever ready.
+  const handleStopAlarm = () => {
+    stopPomodoroAlarm();
+    setAlarmActive(false);
+  };
+
   const currentSubject = subjects.find((s) => s.id === selectedId);
   const isPomo = mode === "pomodoro";
-  const totalPhaseSeconds = (pomoPhase === "work" ? pomodoroSettings.workMinutes : pomodoroSettings.breakMinutes) * 60;
+  const totalPhaseSeconds = totalPhaseSecondsFor(pomoPhase);
 
   return (
     <SkyBackground showFloaters={!isPomo}>
@@ -183,21 +228,33 @@ export default function HomeScreen() {
               <Text style={styles.cycleLabel}>🍅 x{pomoCyclesDone} completed today</Text>
             )}
 
-            <TouchableOpacity
-              style={styles.buttonWrap}
-              onPress={handleStartStopPomodoro}
-              disabled={!selectedId}
-              activeOpacity={0.85}
-            >
-              <LinearGradient
-                colors={running ? ["#F65C6C", "#F2578D"] : [theme.primary, "#B94E8C"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.button}
+            <View style={styles.pomoButtonRow}>
+              <TouchableOpacity
+                style={styles.restartButton}
+                onPress={handleRestartPomodoro}
+                disabled={!selectedId}
               >
-                <Text style={styles.buttonText}>{running ? "Pause" : "Start Focus"}</Text>
-              </LinearGradient>
-            </TouchableOpacity>
+                <Text style={styles.restartButtonText}>↺ Restart</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.buttonWrapFlex}
+                onPress={handleStartStopPomodoro}
+                disabled={!selectedId}
+                activeOpacity={0.85}
+              >
+                <LinearGradient
+                  colors={running ? ["#F65C6C", "#F2578D"] : [theme.primary, "#B94E8C"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.button}
+                >
+                  <Text style={styles.buttonText}>
+                    {running ? "Pause" : displaySeconds < totalPhaseSeconds ? "Resume" : "Start"}
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
           </View>
         ) : (
           <View style={styles.stopwatchArea}>
@@ -230,6 +287,30 @@ export default function HomeScreen() {
             </View>
           </View>
         )}
+
+        {alarmActive && (
+          <View style={styles.alarmOverlay}>
+            <View style={styles.alarmCard}>
+              <Text style={styles.alarmEmoji}>⏰</Text>
+              <Text style={styles.alarmMessage}>{alarmMessage}</Text>
+              <View style={styles.alarmButtonRow}>
+                <TouchableOpacity style={styles.snoozeButton} onPress={handleSnooze}>
+                  <Text style={styles.snoozeButtonText}>Snooze 5m</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.stopAlarmButtonWrap} onPress={handleStopAlarm} activeOpacity={0.85}>
+                  <LinearGradient
+                    colors={[theme.primary, "#B94E8C"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.stopAlarmButton}
+                  >
+                    <Text style={styles.stopAlarmButtonText}>Stop</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        )}
       </SafeAreaView>
     </SkyBackground>
   );
@@ -254,7 +335,6 @@ const styles = StyleSheet.create({
   },
   emptyText: { color: theme.muted, lineHeight: 22, textAlign: "center", fontSize: 15 },
 
-  // Stopwatch layout
   stopwatchArea: { flex: 1, justifyContent: "space-between", paddingTop: 8 },
   timerCard: {
     backgroundColor: theme.cardBg,
@@ -270,12 +350,18 @@ const styles = StyleSheet.create({
   timerText: { fontSize: 64, fontWeight: "800", fontVariant: ["tabular-nums"] },
   timerLabel: { marginTop: 12, color: theme.muted, fontWeight: "700", fontSize: 18 },
 
-  // Pomodoro full-page layout
   pomoFullPage: { flex: 1, alignItems: "center", justifyContent: "space-evenly", paddingTop: 8 },
   pomoPhaseLabelRing: { fontWeight: "800", color: theme.muted, marginBottom: 4, fontSize: 15, letterSpacing: 1 },
   timerTextRing: { fontSize: 52, fontWeight: "800", fontVariant: ["tabular-nums"] },
   timerLabelRing: { marginTop: 6, color: theme.muted, fontWeight: "700", fontSize: 16 },
   cycleLabel: { color: theme.primary, fontWeight: "800", fontSize: 17 },
+
+  pomoButtonRow: { flexDirection: "row", width: "100%", alignItems: "center" },
+  restartButton: {
+    paddingVertical: 20, paddingHorizontal: 16, borderRadius: 18, marginRight: 10,
+    backgroundColor: "rgba(255,255,255,0.65)", borderWidth: 1, borderColor: theme.cardBorder,
+  },
+  restartButtonText: { color: theme.text, fontWeight: "700", fontSize: 16 },
 
   button: {
     borderRadius: 18,
@@ -291,8 +377,47 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 6,
   },
+  buttonWrapFlex: {
+    flex: 1,
+    borderRadius: 18,
+    shadowColor: theme.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 6,
+  },
   buttonText: { color: "#fff", fontWeight: "800", fontSize: 19 },
   todayBox: { alignItems: "center", marginTop: 14 },
   todayLabel: { color: theme.muted, fontSize: 15, fontWeight: "600" },
   todayValue: { fontSize: 26, fontWeight: "800", color: theme.text, marginTop: 4 },
+
+  alarmOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(58,46,69,0.55)",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 50,
+    elevation: 50,
+    padding: 24,
+  },
+  alarmCard: {
+    backgroundColor: "#fff",
+    borderRadius: 28,
+    padding: 30,
+    alignItems: "center",
+    width: "100%",
+    maxWidth: 360,
+    ...cardShadow,
+  },
+  alarmEmoji: { fontSize: 44, marginBottom: 12 },
+  alarmMessage: { fontSize: 18, fontWeight: "700", color: theme.text, textAlign: "center", lineHeight: 25 },
+  alarmButtonRow: { flexDirection: "row", marginTop: 24, width: "100%" },
+  snoozeButton: {
+    flex: 1, paddingVertical: 16, borderRadius: 16, marginRight: 10,
+    backgroundColor: "rgba(242,87,141,0.12)", alignItems: "center",
+  },
+  snoozeButtonText: { color: theme.primary, fontWeight: "700", fontSize: 15 },
+  stopAlarmButtonWrap: { flex: 1, borderRadius: 16 },
+  stopAlarmButton: { paddingVertical: 16, borderRadius: 16, alignItems: "center" },
+  stopAlarmButtonText: { color: "#fff", fontWeight: "800", fontSize: 15 },
 });

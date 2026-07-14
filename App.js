@@ -26,7 +26,7 @@ const ICONS = {
   "For You": "💗",
   Group: "👥",
   Stats: "📊",
-  Subjects: "📚",
+  Subjects: "🎯",
 };
 
 function MainTabs() {

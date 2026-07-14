@@ -63,7 +63,7 @@ export default function PomodoroRing({ remaining, total, phase, size = 220, chil
         ]}
       />
       <View style={{ width: size, height: size, alignItems: "center", justifyContent: "center" }}>
-        <Svg width={size} height={size} style={{ transform: [{ rotate: "-90deg" }] }}>
+        <Svg width={size} height={size} style={{ transform: [{ scaleX: -1 }, { rotate: "-90deg" }] }}>
           <Circle
             cx={size / 2}
             cy={size / 2}
