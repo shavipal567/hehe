@@ -18,3 +18,5 @@ npm-debug.*
 "coverage/" 
 "" 
 "*.orig" 
+"" 
+"*.cache" 
