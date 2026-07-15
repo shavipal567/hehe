@@ -74,3 +74,6 @@ group, not meant for anything sensitive.
 "Tested on Android, iOS (Expo Go), and web." 
 "" 
 "See package.json for the full dependency list." 
+"" 
+"## License" 
+"Personal project, not licensed for redistribution." 
