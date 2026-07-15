@@ -11,12 +11,4 @@ npm-debug.*
 *.orig.*
 .DS_Store
 "" 
-".DS_Store" 
-"" 
-"*.log" 
-"" 
-".vscode/" 
-"" 
-"*.tmp" 
-"" 
-"dist/" 
+"*.bak" 
