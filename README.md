@@ -70,3 +70,5 @@ RLS policies allow public read/insert/update — fine for a small private
 group, not meant for anything sensitive.
 "" 
 "Built with Expo and React Native." 
+"" 
+"Tested on Android, iOS (Expo Go), and web." 
