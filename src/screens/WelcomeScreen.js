@@ -5,10 +5,6 @@ import { useStudy } from "../context/StudyContext";
 import SkyBackground from "../components/SkyBackground";
 import { theme, cardShadow } from "../theme";
 
-// Shown exactly once, the very first time the app opens (onboarded flag is
-// false). Whatever she enters here is saved permanently on this device —
-// she'll never see this screen again unless the app's storage is cleared.
-
 export default function WelcomeScreen() {
   const { completeOnboarding, profile } = useStudy();
   const [name, setName] = useState(profile.name || "");

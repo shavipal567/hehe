@@ -5,19 +5,12 @@ import { supabase } from "../utils/supabase";
 
 const StudyContext = createContext(null);
 
-// Empty by default so she adds her own subjects on first open (Subjects tab).
 const DEFAULT_SUBJECTS = [];
 const DEFAULT_POMODORO = { workMinutes: 25, breakMinutes: 5 };
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
 }
-
-// A "session" is one finished study block: { id, subjectId, seconds, mode, date }
-// A "todo" is one planner item: { id, text, done, date } — date is editable now so
-// the Calendar screen can add/view todos for any day, not just today.
-// A "group member" is a locally-added friend you track manually since there is
-// no server in this build: { id, name, color, totalSeconds }
 
 export function StudyProvider({ children }) {
   const [subjects, setSubjects] = useState(DEFAULT_SUBJECTS);
@@ -71,10 +64,6 @@ export function StudyProvider({ children }) {
   useEffect(() => { if (loaded) saveData(KEYS.USERNAME, username); }, [username, loaded]);
   useEffect(() => { if (loaded) saveData(KEYS.FRIENDS, friends); }, [friends, loaded]);
 
-  // Whenever her total study time changes, push the new total up to Supabase
-  // so friends see it update live. Silently no-ops if she hasn't set a
-  // username yet, or if the network request fails (e.g. offline) — local
-  // data always stays the source of truth, this is just a best-effort sync.
   useEffect(() => {
     if (!loaded || !username) return;
     const totalSeconds = sessions.reduce((sum, s) => sum + s.seconds, 0);
@@ -163,8 +152,6 @@ export function StudyProvider({ children }) {
     setNotes((prev) => prev.filter((n) => n.id !== id));
   }, []);
 
-  // Claims a username in Supabase (fails if already taken by someone else's
-  // device) and stores it locally so all future study time auto-syncs to it.
   const claimUsername = useCallback(async (desiredUsername, displayName) => {
     const clean = desiredUsername.trim().toLowerCase().replace(/[^a-z0-9_]/g, "");
     if (!clean) return { error: "Please enter a valid username (letters, numbers, underscores)." };

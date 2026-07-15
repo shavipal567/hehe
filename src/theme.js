@@ -1,5 +1,3 @@
-// Shared design tokens so every screen feels part of one cohesive theme:
-// dusky pink-to-blue sky, soft "doctor-girly" pastel palette.
 
 export const cardShadow = {
   shadowColor: "#B4568A",

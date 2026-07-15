@@ -6,13 +6,6 @@ import { theme } from "../theme";
 
 const { height: SCREEN_H } = Dimensions.get("window");
 
-// A richer, "alive" pink/blue sky backdrop: a soft multi-stop gradient,
-// glowing color blobs for depth, rolling hill silhouettes (a full scenic
-// cover rather than a flat color), a scatter of gently twinkling stars, a
-// tiny crescent moon, slowly bobbing flower/sparkle emoji, and hearts that
-// drift upward continuously. Purely decorative (pointerEvents="none") so it
-// never blocks taps underneath.
-
 const STARS = [
   { x: 24, y: 50, r: 1.6, phase: 0 }, { x: 70, y: 24, r: 1.1, phase: 1 },
   { x: 118, y: 66, r: 1.8, phase: 0 }, { x: 160, y: 20, r: 1.2, phase: 1 },

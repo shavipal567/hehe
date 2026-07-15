@@ -7,11 +7,6 @@ const STROKE = 16;
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
-// A round, glowing pomodoro display: a soft pulsing color blob "breathes"
-// behind a circular progress ring that drains smoothly as the phase runs
-// down. Ring + glow both recolor depending on focus vs break phase.
-// `size` is configurable so it can go full-page-large on the Timer screen.
-
 export default function PomodoroRing({ remaining, total, phase, size = 220, children }) {
   const radius = (size - STROKE) / 2;
   const circumference = 2 * Math.PI * radius;

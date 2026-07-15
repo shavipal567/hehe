@@ -25,13 +25,6 @@ function formatCountdown(totalSeconds) {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-// This timer is "background safe": instead of counting ticks (which pause or
-// drift when the app is backgrounded / the phone sleeps), it stores the real
-// clock timestamp the timer started at, and always recomputes elapsed time
-// from Date.now() - startedAt. So switching apps, locking the phone, or the
-// OS throttling background JS never loses time — the moment you come back,
-// the correct elapsed time is recalculated instantly from the real clock.
-
 export default function HomeScreen() {
   const { subjects, addSession, sessions, pomodoroSettings } = useStudy();
   const [selectedId, setSelectedId] = useState(subjects[0]?.id);
@@ -119,8 +112,6 @@ export default function HomeScreen() {
     }
   };
 
-  // Start/Pause/Resume, all in one: if paused mid-phase, resuming continues
-  // from wherever displaySeconds currently sits (not a full reset).
   const handleStartStopPomodoro = () => {
     if (running) {
       setRunning(false);
@@ -132,8 +123,6 @@ export default function HomeScreen() {
     }
   };
 
-  // Restarts the CURRENT phase (focus or break, whichever is active) back to
-  // its full length — works whether the timer is running or paused.
   const handleRestartPomodoro = () => {
     const total = totalPhaseSecondsFor(pomoPhase);
     setDisplaySeconds(total);
@@ -157,9 +146,6 @@ export default function HomeScreen() {
     }
   };
 
-  // Snooze = "not ready yet" — give a few more minutes of whatever phase just
-  // ended (extend focus if focus just ended, extend break if break just ended)
-  // rather than jumping into the next phase.
   const handleSnooze = () => {
     stopPomodoroAlarm();
     setAlarmActive(false);
@@ -170,8 +156,6 @@ export default function HomeScreen() {
     setRunning(true);
   };
 
-  // Stop = acknowledge and move on. The next phase is already queued up
-  // (paused, full duration) — she starts it herself whenever ready.
   const handleStopAlarm = () => {
     stopPomodoroAlarm();
     setAlarmActive(false);

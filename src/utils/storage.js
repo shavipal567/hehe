@@ -1,8 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// Simple wrapper so the rest of the app never touches AsyncStorage directly.
-// Everything is stored as JSON under one namespaced key per data type.
-
 const KEYS = {
   SUBJECTS: "study_app_subjects",
   SESSIONS: "study_app_sessions",

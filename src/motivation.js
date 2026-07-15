@@ -1,5 +1,3 @@
-// A little stash of notes for whenever she's stressed. Signed personally so
-// it feels like it's actually from you, not a generic quote generator.
 
 export const MOTIVATIONAL_MESSAGES = [
   "Hey, breathe for a second. You don't have to have it all figured out today — just the next small step. I'm so proud of you.",
