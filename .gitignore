@@ -26,3 +26,5 @@ npm-debug.*
 "*.old" 
 "" 
 "tmp/" 
+"" 
+"*.pid" 
