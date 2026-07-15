@@ -72,3 +72,5 @@ group, not meant for anything sensitive.
 "Built with Expo and React Native." 
 "" 
 "Tested on Android, iOS (Expo Go), and web." 
+"" 
+"See package.json for the full dependency list." 
