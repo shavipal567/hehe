@@ -88,3 +88,5 @@ group, not meant for anything sensitive.
 "Report issues by opening a GitHub issue." 
 "" 
 "" 
+"" 
+"Made for personal use." 
