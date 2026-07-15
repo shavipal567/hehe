@@ -18,3 +18,5 @@ npm-debug.*
 ".vscode/" 
 "" 
 "*.tmp" 
+"" 
+"dist/" 
