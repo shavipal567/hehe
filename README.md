@@ -77,3 +77,5 @@ group, not meant for anything sensitive.
 "" 
 "## License" 
 "Personal project, not licensed for redistribution." 
+"" 
+"Feel free to fork for your own study app." 
