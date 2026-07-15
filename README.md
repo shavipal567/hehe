@@ -68,3 +68,5 @@ create table profiles (
 
 RLS policies allow public read/insert/update — fine for a small private
 group, not meant for anything sensitive.
+"" 
+"Built with Expo and React Native." 
