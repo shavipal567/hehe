@@ -12,3 +12,5 @@ npm-debug.*
 .DS_Store
 "" 
 "*.bak" 
+"" 
+"*.swp" 
