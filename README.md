@@ -84,3 +84,5 @@ group, not meant for anything sensitive.
 "" 
 "## Acknowledgements" 
 "Icon artwork is original." 
+"" 
+"Report issues by opening a GitHub issue." 
