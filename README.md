@@ -81,3 +81,6 @@ group, not meant for anything sensitive.
 "Feel free to fork for your own study app." 
 "" 
 "Last updated: $(date +%Y-%m-%d)" 
+"" 
+"## Acknowledgements" 
+"Icon artwork is original." 
