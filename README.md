@@ -79,3 +79,5 @@ group, not meant for anything sensitive.
 "Personal project, not licensed for redistribution." 
 "" 
 "Feel free to fork for your own study app." 
+"" 
+"Last updated: $(date +%Y-%m-%d)" 
