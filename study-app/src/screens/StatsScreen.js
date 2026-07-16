@@ -18,17 +18,6 @@ function formatHours(totalSeconds) {
   return (totalSeconds / 3600).toFixed(1);
 }
 
-function formatDetailed(totalSeconds) {
-  const h = Math.floor(totalSeconds / 3600);
-  const m = Math.floor((totalSeconds % 3600) / 60);
-  const s = Math.floor(totalSeconds % 60);
-  const parts = [];
-  if (h > 0) parts.push(`${h}h`);
-  if (m > 0 || h > 0) parts.push(`${m}m`);
-  parts.push(`${s}s`);
-  return parts.join(" ");
-}
-
 export default function StatsScreen() {
   const { sessions, subjects } = useStudy();
 
@@ -62,7 +51,7 @@ export default function StatsScreen() {
       <SafeAreaView style={styles.container}>
         <ScrollView>
           <Text style={styles.title}>Study Stats</Text>
-          <Text style={styles.subtitle}>Last 7 days · {formatHours(weekTotal)}h total ({formatDetailed(weekTotal)}) · 🍅 {pomoCount} pomodoros</Text>
+          <Text style={styles.subtitle}>Last 7 days · {formatHours(weekTotal)}h total · 🍅 {pomoCount} pomodoros</Text>
 
           <View style={styles.chartCard}>
             <View style={styles.barsRow}>
@@ -84,12 +73,12 @@ export default function StatsScreen() {
           <View style={styles.splitRow}>
             <View style={styles.splitCard}>
               <Text style={styles.splitEmoji}>⏱️</Text>
-              <Text style={styles.splitValue}>{formatDetailed(stopwatchSeconds)}</Text>
+              <Text style={styles.splitValue}>{formatHours(stopwatchSeconds)}h</Text>
               <Text style={styles.splitLabel}>Stopwatch</Text>
             </View>
             <View style={styles.splitCard}>
               <Text style={styles.splitEmoji}>🍅</Text>
-              <Text style={styles.splitValue}>{formatDetailed(pomoSeconds)}</Text>
+              <Text style={styles.splitValue}>{formatHours(pomoSeconds)}h</Text>
               <Text style={styles.splitLabel}>Pomodoro ({pomoCount})</Text>
             </View>
           </View>
@@ -109,7 +98,6 @@ export default function StatsScreen() {
                 <View style={styles.progressTrack}>
                   <View style={[styles.progressFill, { width: `${pct}%`, backgroundColor: s.color }]} />
                 </View>
-                <Text style={styles.subjectDetailed}>{formatDetailed(s.total)}</Text>
               </View>
             );
           })}
@@ -142,7 +130,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: theme.cardBorder, ...cardShadow,
   },
   splitEmoji: { fontSize: 20, marginBottom: 4 },
-  splitValue: { fontSize: 16, fontWeight: "800", color: theme.text, textAlign: "center" },
+  splitValue: { fontSize: 20, fontWeight: "800", color: theme.text },
   splitLabel: { color: theme.muted, fontWeight: "600", fontSize: 12, marginTop: 2 },
   empty: { color: theme.muted, textAlign: "center", marginTop: 12 },
   subjectRow: { marginBottom: 14 },
@@ -152,5 +140,4 @@ const styles = StyleSheet.create({
   subjectHours: { fontWeight: "700", color: theme.muted },
   progressTrack: { height: 8, backgroundColor: "rgba(242,87,141,0.12)", borderRadius: 4, overflow: "hidden" },
   progressFill: { height: "100%", borderRadius: 4 },
-  subjectDetailed: { color: theme.muted, fontSize: 11, marginTop: 4 },
 });
