@@ -4,10 +4,12 @@ import {
 } from "react-native";
 import { useStudy } from "../context/StudyContext";
 import SkyBackground from "../components/SkyBackground";
-import { theme, SUBJECT_PALETTE, BACKGROUND_PALETTES, cardShadow } from "../theme";
+import { getTheme, SUBJECT_PALETTE, BACKGROUND_PALETTES, cardShadow } from "../theme";
 
 export default function SubjectsScreen() {
-  const { subjects, addSubject, removeSubject, profile, setProfile, pomodoroSettings, setPomodoroSettings, bgPalette, setBgPalette } = useStudy();
+  const { subjects, addSubject, removeSubject, profile, setProfile, pomodoroSettings, setPomodoroSettings, bgPalette, setBgPalette, darkMode, setDarkMode } = useStudy();
+  const theme = getTheme(darkMode);
+  const styles = makeStyles(theme, darkMode);
   const [name, setName] = useState("");
 
   const handleAdd = () => {
@@ -90,7 +92,21 @@ export default function SubjectsScreen() {
             </View>
           </View>
 
+          <Text style={[styles.label, { marginTop: 24 }]}>🌙 Dark mode</Text>
+          <View style={styles.darkModeRow}>
+            <Text style={styles.darkModeLabel}>{darkMode ? "On" : "Off"} — easier on the eyes at night</Text>
+            <TouchableOpacity
+              style={[styles.darkToggle, darkMode && styles.darkToggleActive]}
+              onPress={() => setDarkMode(!darkMode)}
+            >
+              <View style={[styles.darkToggleKnob, darkMode && styles.darkToggleKnobActive]} />
+            </TouchableOpacity>
+          </View>
+
           <Text style={[styles.label, { marginTop: 24 }]}>🎨 Background theme</Text>
+          {darkMode && (
+            <Text style={styles.paletteDimNote}>Dark mode is on, so these are paused until you turn it off.</Text>
+          )}
           <View style={styles.paletteRow}>
             {BACKGROUND_PALETTES.map((p) => (
               <TouchableOpacity
@@ -113,7 +129,8 @@ export default function SubjectsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(theme, darkMode) {
+  return StyleSheet.create({
   container: { flex: 1, padding: 20 },
   title: { fontSize: 28, fontWeight: "800", color: theme.text, marginTop: 8, marginBottom: 12 },
   label: { color: theme.muted, fontWeight: "600", marginBottom: 6 },
@@ -156,4 +173,21 @@ const styles = StyleSheet.create({
   paletteHalf: { flex: 1 },
   paletteLabel: { fontSize: 11, fontWeight: "700", color: theme.text, textAlign: "center" },
   paletteCheck: { position: "absolute", top: 4, right: 6, color: theme.primary, fontWeight: "800" },
+  darkModeRow: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    backgroundColor: theme.cardBg, borderRadius: 14, padding: 14,
+    borderWidth: 1, borderColor: theme.cardBorder, ...cardShadow,
+  },
+  darkModeLabel: { color: theme.text, fontWeight: "600", flex: 1, marginRight: 12 },
+  darkToggle: {
+    width: 50, height: 30, borderRadius: 15, padding: 3,
+    backgroundColor: darkMode ? theme.primary : "rgba(0,0,0,0.15)", justifyContent: "center",
+  },
+  darkToggleActive: { backgroundColor: theme.primary },
+  darkToggleKnob: {
+    width: 24, height: 24, borderRadius: 12, backgroundColor: "#fff", alignSelf: "flex-start",
+  },
+  darkToggleKnobActive: { alignSelf: "flex-end" },
+  paletteDimNote: { color: theme.muted, fontSize: 12, marginBottom: 8 },
 });
+}

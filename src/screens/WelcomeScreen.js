@@ -3,10 +3,12 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Keyb
 import { LinearGradient } from "expo-linear-gradient";
 import { useStudy } from "../context/StudyContext";
 import SkyBackground from "../components/SkyBackground";
-import { theme, cardShadow } from "../theme";
+import { getTheme, cardShadow } from "../theme";
 
 export default function WelcomeScreen() {
-  const { completeOnboarding, profile } = useStudy();
+  const { completeOnboarding, profile, darkMode } = useStudy();
+  const theme = getTheme(darkMode);
+  const styles = makeStyles(theme, darkMode);
   const [name, setName] = useState(profile.name || "");
 
   return (
@@ -54,7 +56,8 @@ export default function WelcomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(theme, darkMode) {
+  return StyleSheet.create({
   container: { flex: 1, justifyContent: "center", padding: 24 },
   card: {
     backgroundColor: theme.cardBg,
@@ -81,3 +84,4 @@ const styles = StyleSheet.create({
   buttonText: { color: "#fff", fontWeight: "700", fontSize: 16 },
   footnote: { color: theme.muted, fontSize: 12, textAlign: "center", marginTop: 16 },
 });
+}

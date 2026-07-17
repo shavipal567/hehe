@@ -1,13 +1,16 @@
 import React, { useEffect, useRef } from "react";
 import { View, StyleSheet, Animated, Easing } from "react-native";
 import Svg, { Circle } from "react-native-svg";
-import { theme } from "../theme";
+import { getTheme } from "../theme";
+import { useStudy } from "../context/StudyContext";
 
 const STROKE = 16;
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 export default function PomodoroRing({ remaining, total, phase, size = 220, children }) {
+  const { darkMode } = useStudy();
+  const theme = getTheme(darkMode);
   const radius = (size - STROKE) / 2;
   const circumference = 2 * Math.PI * radius;
 

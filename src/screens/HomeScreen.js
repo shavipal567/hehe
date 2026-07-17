@@ -6,7 +6,7 @@ import SubjectPicker from "../components/SubjectPicker";
 import SkyBackground from "../components/SkyBackground";
 import PomodoroRing from "../components/PomodoroRing";
 import { startPomodoroAlarm, stopPomodoroAlarm } from "../utils/alarm";
-import { theme, cardShadow } from "../theme";
+import { getTheme, cardShadow } from "../theme";
 
 const { width: SCREEN_W } = Dimensions.get("window");
 const RING_SIZE = Math.min(SCREEN_W * 0.78, 300);
@@ -26,7 +26,9 @@ function formatCountdown(totalSeconds) {
 }
 
 export default function HomeScreen() {
-  const { subjects, addSession, sessions, pomodoroSettings } = useStudy();
+  const { subjects, addSession, sessions, pomodoroSettings, darkMode } = useStudy();
+  const theme = getTheme(darkMode);
+  const styles = makeStyles(theme, darkMode);
   const [selectedId, setSelectedId] = useState(subjects[0]?.id);
   const [mode, setMode] = useState("stopwatch"); // "stopwatch" | "pomodoro"
   const [running, setRunning] = useState(false);
@@ -300,12 +302,13 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(theme, darkMode) {
+  return StyleSheet.create({
   container: { flex: 1, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 20 },
   topBar: { marginBottom: 4 },
   title: { fontSize: 34, fontWeight: "800", color: theme.text, letterSpacing: 1 },
   modeSwitch: {
-    flexDirection: "row", backgroundColor: "rgba(255,255,255,0.6)", borderRadius: 16, padding: 4, marginTop: 10,
+    flexDirection: "row", backgroundColor: darkMode ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.6)", borderRadius: 16, padding: 4, marginTop: 10,
   },
   modeButton: { flex: 1, paddingVertical: 12, borderRadius: 12, alignItems: "center" },
   modeButtonActive: { backgroundColor: theme.primary },
@@ -343,7 +346,7 @@ const styles = StyleSheet.create({
   pomoButtonRow: { flexDirection: "row", width: "100%", alignItems: "center" },
   restartButton: {
     paddingVertical: 20, paddingHorizontal: 16, borderRadius: 18, marginRight: 10,
-    backgroundColor: "rgba(255,255,255,0.65)", borderWidth: 1, borderColor: theme.cardBorder,
+    backgroundColor: darkMode ? "rgba(255,255,255,0.10)" : "rgba(255,255,255,0.65)", borderWidth: 1, borderColor: theme.cardBorder,
   },
   restartButtonText: { color: theme.text, fontWeight: "700", fontSize: 16 },
 
@@ -385,7 +388,7 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   alarmCard: {
-    backgroundColor: "#fff",
+    backgroundColor: darkMode ? "#241B36" : "#fff",
     borderRadius: 28,
     padding: 30,
     alignItems: "center",
@@ -405,3 +408,4 @@ const styles = StyleSheet.create({
   stopAlarmButton: { paddingVertical: 16, borderRadius: 16, alignItems: "center" },
   stopAlarmButtonText: { color: "#fff", fontWeight: "800", fontSize: 15 },
 });
+}

@@ -88,3 +88,26 @@ $$;
 
 grant execute on function create_group(text, text, text) to anon, authenticated;
 grant execute on function join_group_with_passkey(uuid, text, text) to anon, authenticated;
+
+-- Lets only the group's creator delete it. Deleting a group also removes
+-- all its members automatically (group_members has ON DELETE CASCADE).
+create or replace function delete_group(p_group_id uuid, p_username text)
+returns boolean
+language plpgsql
+security definer
+as $$
+declare
+  is_owner boolean;
+begin
+  select (created_by = p_username) into is_owner
+  from groups where id = p_group_id;
+
+  if is_owner then
+    delete from groups where id = p_group_id;
+  end if;
+
+  return coalesce(is_owner, false);
+end;
+$$;
+
+grant execute on function delete_group(uuid, text) to anon, authenticated;

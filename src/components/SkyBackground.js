@@ -56,8 +56,8 @@ function DriftingHeart({ left, delay, size }) {
 }
 
 export default function SkyBackground({ children, showFloaters = true }) {
-  const { bgPalette } = useStudy();
-  const palette = getBackgroundPalette(bgPalette);
+  const { bgPalette, darkMode } = useStudy();
+  const palette = getBackgroundPalette(bgPalette, darkMode);
   const twinkle = useRef(new Animated.Value(0)).current;
   const bob = useRef(new Animated.Value(0)).current;
 

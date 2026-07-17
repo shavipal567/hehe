@@ -12,6 +12,7 @@ const KEYS = {
   USERNAME: "study_app_username",
   FRIENDS: "study_app_friends",
   BG_PALETTE: "study_app_bg_palette",
+  DARK_MODE: "study_app_dark_mode",
 };
 
 export async function loadData(key, fallback) {

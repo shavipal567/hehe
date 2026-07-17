@@ -7,10 +7,9 @@ export const cardShadow = {
   elevation: 4,
 };
 
-export const theme = {
-  skyGradient: ["#FFE4EF", "#F3E8FF", "#E0EEFF"], // pink -> lavender -> sky blue
-  primary: "#F2578D", // pink accent (buttons, active states)
-  secondary: "#7FB8E8", // soft sky blue accent
+const lightTheme = {
+  primary: "#F2578D",
+  secondary: "#7FB8E8",
   text: "#3A2E45",
   muted: "#9A7E93",
   cardBg: "rgba(255,255,255,0.82)",
@@ -18,6 +17,24 @@ export const theme = {
   danger: "#F65C6C",
   success: "#4CD787",
 };
+
+const darkTheme = {
+  primary: "#FF7AAE",
+  secondary: "#8FCBFF",
+  text: "#F3ECFA",
+  muted: "#B79FC9",
+  cardBg: "rgba(30,24,44,0.78)",
+  cardBorder: "rgba(255,255,255,0.10)",
+  danger: "#FF8A93",
+  success: "#6FE0A8",
+};
+
+export function getTheme(darkMode) {
+  return darkMode ? darkTheme : lightTheme;
+}
+
+// Kept for any code that still imports the static default (light) theme.
+export const theme = lightTheme;
 
 export const SUBJECT_PALETTE = [
   "#F2578D", // pink
@@ -86,6 +103,21 @@ export const BACKGROUND_PALETTES = [
   },
 ];
 
-export function getBackgroundPalette(id) {
+// Used automatically whenever dark mode is on, regardless of which light
+// palette is selected — dark mode is a separate override, not a 6th swatch.
+export const DARK_BACKGROUND_PALETTE = {
+  id: "darkNight",
+  label: "Dark",
+  swatch: ["#1E1830", "#0D0B16"],
+  gradient: ["#241B36", "#1B1428", "#140F20", "#0D0B16"],
+  blobPink: "rgba(255,122,174,0.18)",
+  blobBlue: "rgba(143,203,255,0.14)",
+  blobLavender: "rgba(180,151,232,0.14)",
+  hillFar: "rgba(80,60,120,0.35)",
+  hillNear: "rgba(40,30,70,0.55)",
+};
+
+export function getBackgroundPalette(id, darkMode) {
+  if (darkMode) return DARK_BACKGROUND_PALETTE;
   return BACKGROUND_PALETTES.find((p) => p.id === id) || BACKGROUND_PALETTES[0];
 }

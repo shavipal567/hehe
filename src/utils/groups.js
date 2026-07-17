@@ -18,6 +18,15 @@ export async function joinGroupWithPasskey(groupId, passkey, username) {
   return { success: !!data, error: error?.message };
 }
 
+export async function fetchAllGroups() {
+  const { data, error } = await supabase
+    .from("groups_public")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(100);
+  return { data: data || [], error: error?.message };
+}
+
 export async function findGroupByName(name) {
   const { data, error } = await supabase
     .from("groups_public")
@@ -53,6 +62,14 @@ export async function declineInvite(groupId, username) {
 }
 
 export const leaveGroup = declineInvite;
+
+export async function deleteGroup(groupId, username) {
+  const { data, error } = await supabase.rpc("delete_group", {
+    p_group_id: groupId,
+    p_username: username,
+  });
+  return { success: !!data, error: error?.message };
+}
 
 export async function fetchMyGroups(username) {
   const { data: memberships } = await supabase

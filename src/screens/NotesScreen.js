@@ -4,10 +4,12 @@ import {
 } from "react-native";
 import { useStudy } from "../context/StudyContext";
 import SkyBackground from "../components/SkyBackground";
-import { theme, cardShadow } from "../theme";
+import { getTheme, cardShadow } from "../theme";
 
 export default function NotesScreen() {
-  const { notes, addNote, updateNote, removeNote } = useStudy();
+  const { notes, addNote, updateNote, removeNote, darkMode } = useStudy();
+  const theme = getTheme(darkMode);
+  const styles = makeStyles(theme, darkMode);
   const [draft, setDraft] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [editText, setEditText] = useState("");
@@ -90,7 +92,8 @@ export default function NotesScreen() {
 
 const NOTE_SIZE = "46%";
 
-const styles = StyleSheet.create({
+function makeStyles(theme, darkMode) {
+  return StyleSheet.create({
   container: { flex: 1, padding: 20 },
   title: { fontSize: 26, fontWeight: "800", color: theme.text, marginTop: 8 },
   subtitle: { color: theme.muted, marginTop: 4, marginBottom: 12 },
@@ -120,3 +123,4 @@ const styles = StyleSheet.create({
   removeButton: { position: "absolute", top: 6, right: 8 },
   removeText: { color: "rgba(58,46,69,0.45)", fontSize: 14, fontWeight: "700" },
 });
+}

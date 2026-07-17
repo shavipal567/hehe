@@ -4,7 +4,7 @@ import {
 } from "react-native";
 import { useStudy } from "../context/StudyContext";
 import SkyBackground from "../components/SkyBackground";
-import { theme, cardShadow } from "../theme";
+import { getTheme, cardShadow } from "../theme";
 
 const WEEKDAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
 
@@ -13,7 +13,9 @@ function toDateStr(y, m, d) {
 }
 
 export default function CalendarScreen() {
-  const { todos, sessions, addTodo, toggleTodo, removeTodo } = useStudy();
+  const { todos, sessions, addTodo, toggleTodo, removeTodo, darkMode } = useStudy();
+  const theme = getTheme(darkMode);
+  const styles = makeStyles(theme, darkMode);
   const now = new Date();
   const [viewYear, setViewYear] = useState(now.getFullYear());
   const [viewMonth, setViewMonth] = useState(now.getMonth()); // 0-indexed
@@ -144,7 +146,8 @@ export default function CalendarScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(theme, darkMode) {
+  return StyleSheet.create({
   container: { flex: 1, padding: 20 },
   title: { fontSize: 28, fontWeight: "800", color: theme.text, marginTop: 8 },
   subtitle: { color: theme.muted, marginTop: 4, marginBottom: 12 },
@@ -188,3 +191,4 @@ const styles = StyleSheet.create({
   todoTextDone: { textDecorationLine: "line-through", color: theme.muted },
   remove: { color: theme.muted, fontSize: 15, paddingHorizontal: 4 },
 });
+}

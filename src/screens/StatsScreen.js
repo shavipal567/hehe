@@ -2,7 +2,7 @@ import React, { useMemo } from "react";
 import { View, Text, StyleSheet, SafeAreaView, ScrollView } from "react-native";
 import { useStudy } from "../context/StudyContext";
 import SkyBackground from "../components/SkyBackground";
-import { theme, cardShadow } from "../theme";
+import { getTheme, cardShadow } from "../theme";
 
 function getLastNDates(n) {
   const dates = [];
@@ -30,7 +30,9 @@ function formatDetailed(totalSeconds) {
 }
 
 export default function StatsScreen() {
-  const { sessions, subjects } = useStudy();
+  const { sessions, subjects, darkMode } = useStudy();
+  const theme = getTheme(darkMode);
+  const styles = makeStyles(theme, darkMode);
 
   const last7 = getLastNDates(7);
 
@@ -119,7 +121,8 @@ export default function StatsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(theme, darkMode) {
+  return StyleSheet.create({
   container: { flex: 1, padding: 20 },
   title: { fontSize: 28, fontWeight: "800", color: theme.text, marginTop: 8 },
   subtitle: { color: theme.muted, marginTop: 4, marginBottom: 16 },
@@ -154,3 +157,4 @@ const styles = StyleSheet.create({
   progressFill: { height: "100%", borderRadius: 4 },
   subjectDetailed: { color: theme.muted, fontSize: 11, marginTop: 4 },
 });
+}

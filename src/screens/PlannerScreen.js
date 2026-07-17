@@ -4,10 +4,12 @@ import {
 } from "react-native";
 import { useStudy } from "../context/StudyContext";
 import SkyBackground from "../components/SkyBackground";
-import { theme, cardShadow } from "../theme";
+import { getTheme, cardShadow } from "../theme";
 
 export default function PlannerScreen() {
-  const { todos, addTodo, toggleTodo, removeTodo } = useStudy();
+  const { todos, addTodo, toggleTodo, removeTodo, darkMode } = useStudy();
+  const theme = getTheme(darkMode);
+  const styles = makeStyles(theme, darkMode);
   const [text, setText] = useState("");
 
   const today = new Date().toISOString().slice(0, 10);
@@ -68,7 +70,8 @@ export default function PlannerScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(theme, darkMode) {
+  return StyleSheet.create({
   container: { flex: 1, padding: 20 },
   title: { fontSize: 28, fontWeight: "800", color: theme.text, marginTop: 8 },
   subtitle: { color: theme.muted, marginTop: 4, marginBottom: 8 },
@@ -96,3 +99,4 @@ const styles = StyleSheet.create({
   todoTextDone: { textDecorationLine: "line-through", color: theme.muted },
   remove: { color: theme.muted, fontSize: 16, paddingHorizontal: 6 },
 });
+}

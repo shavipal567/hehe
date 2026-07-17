@@ -14,7 +14,7 @@ import SubjectsScreen from "./src/screens/SubjectsScreen";
 import ForYouScreen from "./src/screens/ForYouScreen";
 import NotesScreen from "./src/screens/NotesScreen";
 import WelcomeScreen from "./src/screens/WelcomeScreen";
-import { theme } from "./src/theme";
+import { getTheme } from "./src/theme";
 
 const Tab = createBottomTabNavigator();
 
@@ -30,6 +30,9 @@ const ICONS = {
 };
 
 function MainTabs() {
+  const { darkMode } = useStudy();
+  const theme = getTheme(darkMode);
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -38,6 +41,7 @@ function MainTabs() {
         tabBarInactiveTintColor: theme.muted,
         tabBarIcon: () => <Text style={{ fontSize: 18 }}>{ICONS[route.name]}</Text>,
         tabBarLabelStyle: { fontSize: 9 },
+        tabBarStyle: { backgroundColor: darkMode ? "#1B1428" : "#ffffff" },
       })}
     >
       <Tab.Screen name="Timer" component={HomeScreen} />
@@ -53,16 +57,20 @@ function MainTabs() {
 }
 
 function RootRouter() {
-  const { loaded, onboarded } = useStudy();
-  if (!loaded) return null; // brief splash while AsyncStorage loads
-  return onboarded ? <MainTabs /> : <WelcomeScreen />;
+  const { loaded, onboarded, darkMode } = useStudy();
+  if (!loaded) return null;
+  return (
+    <>
+      <StatusBar style={darkMode ? "light" : "dark"} />
+      {onboarded ? <MainTabs /> : <WelcomeScreen />}
+    </>
+  );
 }
 
 export default function App() {
   return (
     <StudyProvider>
       <NavigationContainer>
-        <StatusBar style="dark" />
         <RootRouter />
       </NavigationContainer>
     </StudyProvider>

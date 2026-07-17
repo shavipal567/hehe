@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { KEYS, loadData, saveData } from "../utils/storage";
-import { SUBJECT_PALETTE } from "../theme";
+import { SUBJECT_PALETTE, getTheme } from "../theme";
 import { supabase } from "../utils/supabase";
 
 const StudyContext = createContext(null);
@@ -23,12 +23,13 @@ export function StudyProvider({ children }) {
   const [username, setUsernameState] = useState(null);
   const [friends, setFriends] = useState([]);
   const [bgPalette, setBgPaletteState] = useState("pinkDusk");
+  const [darkMode, setDarkModeState] = useState(false);
   const [onboarded, setOnboardedState] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     (async () => {
-      const [s, sess, t, g, p, pomo, onb, n, uname, fr, bg] = await Promise.all([
+      const [s, sess, t, g, p, pomo, onb, n, uname, fr, bg, dm] = await Promise.all([
         loadData(KEYS.SUBJECTS, DEFAULT_SUBJECTS),
         loadData(KEYS.SESSIONS, []),
         loadData(KEYS.TODOS, []),
@@ -40,6 +41,7 @@ export function StudyProvider({ children }) {
         loadData(KEYS.USERNAME, null),
         loadData(KEYS.FRIENDS, []),
         loadData(KEYS.BG_PALETTE, "pinkDusk"),
+        loadData(KEYS.DARK_MODE, false),
       ]);
       setSubjects(s);
       setSessions(sess);
@@ -52,6 +54,7 @@ export function StudyProvider({ children }) {
       setUsernameState(uname);
       setFriends(fr);
       setBgPaletteState(bg);
+      setDarkModeState(dm);
       setLoaded(true);
     })();
   }, []);
@@ -67,6 +70,7 @@ export function StudyProvider({ children }) {
   useEffect(() => { if (loaded) saveData(KEYS.USERNAME, username); }, [username, loaded]);
   useEffect(() => { if (loaded) saveData(KEYS.FRIENDS, friends); }, [friends, loaded]);
   useEffect(() => { if (loaded) saveData(KEYS.BG_PALETTE, bgPalette); }, [bgPalette, loaded]);
+  useEffect(() => { if (loaded) saveData(KEYS.DARK_MODE, darkMode); }, [darkMode, loaded]);
 
   useEffect(() => {
     if (!loaded || !username) return;
@@ -195,14 +199,18 @@ export function StudyProvider({ children }) {
     setBgPaletteState(id);
   }, []);
 
+  const setDarkMode = useCallback((value) => {
+    setDarkModeState(value);
+  }, []);
+
   const value = {
     subjects, sessions, todos, groupMembers, profile, pomodoroSettings, notes, onboarded, loaded,
-    username, friends, bgPalette,
+    username, friends, bgPalette, darkMode,
     addSession, addSubject, removeSubject,
     addTodo, toggleTodo, removeTodo,
     addGroupMember, logGroupMemberTime, removeGroupMember,
     addNote, updateNote, removeNote,
-    claimUsername, addFriend, removeFriend, setBgPalette,
+    claimUsername, addFriend, removeFriend, setBgPalette, setDarkMode,
     setProfile, setPomodoroSettings, completeOnboarding,
   };
 

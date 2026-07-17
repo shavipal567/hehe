@@ -2,10 +2,14 @@ import React, { useRef, useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Animated } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import SkyBackground from "../components/SkyBackground";
-import { theme, cardShadow } from "../theme";
+import { getTheme, cardShadow } from "../theme";
 import { getRandomMessage } from "../motivation";
+import { useStudy } from "../context/StudyContext";
 
 export default function ForYouScreen() {
+  const { darkMode } = useStudy();
+  const theme = getTheme(darkMode);
+  const styles = makeStyles(theme, darkMode);
   const [current, setCurrent] = useState(null);
   const fade = useRef(new Animated.Value(1)).current;
 
@@ -61,7 +65,8 @@ export default function ForYouScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(theme, darkMode) {
+  return StyleSheet.create({
   container: { flex: 1, padding: 20, justifyContent: "center" },
   title: { fontSize: 28, fontWeight: "800", color: theme.text, textAlign: "center" },
   subtitle: { color: theme.muted, textAlign: "center", marginTop: 8, marginBottom: 24, lineHeight: 20 },
@@ -88,3 +93,4 @@ const styles = StyleSheet.create({
   buttonText: { color: "#fff", fontWeight: "700", fontSize: 15 },
   footnote: { color: theme.muted, fontSize: 12, textAlign: "center", marginTop: 18 },
 });
+}
