@@ -32,6 +32,23 @@ export function AuthProvider({ children }) {
 
   const signUp = useCallback(async (email, password) => {
     const { data, error } = await supabase.auth.signUp({ email, password });
+
+    if (!error && data?.user) {
+      supabase.from("profiles").insert({
+        id: data.user.id,
+        username: data.user.id,
+        display_name: "User",
+        total_seconds: 0,
+      }).then(({ error: insertError }) => {
+        if (insertError) {
+          console.warn(
+            "Profile fallback skipped (trigger likely handled it):",
+            insertError.message
+          );
+        }
+      });
+    }
+
     return { data, error };
   }, []);
 

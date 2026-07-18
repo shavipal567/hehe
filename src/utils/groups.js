@@ -1,31 +1,73 @@
 import { supabase } from "./supabase";
 
-export async function createGroup(name, passkey, owner) {
+async function currentUserId() {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  return session?.user?.id;
+}
+
+export async function createGroup(name, passkey, userId) {
+  const resolvedId = userId || (await currentUserId());
+
+  if (!resolvedId) {
+    return { id: null, error: "Not authenticated" };
+  }
+
   const { data, error } = await supabase.rpc("create_group", {
     p_name: name,
     p_passkey: passkey,
-    p_owner: owner,
+    p_owner_id: resolvedId,
   });
-  return { id: data, error: error?.message };
+
+  return {
+    id: data,
+    error: error?.message,
+  };
 }
 
-export async function joinGroupWithPasskey(groupId, passkey, username) {
-  const { data, error } = await supabase.rpc("join_group_with_passkey", {
-    p_group_id: groupId,
-    p_passkey: passkey,
-    p_username: username,
-  });
-  return { success: !!data, error: error?.message };
+
+export async function joinGroupWithPasskey(groupId, passkey, userId) {
+  const resolvedId = userId || (await currentUserId());
+
+  if (!resolvedId) {
+    return {
+      success: false,
+      error: "Not authenticated",
+    };
+  }
+
+  const { data, error } = await supabase.rpc(
+    "join_group_with_passkey",
+    {
+      p_group_id: groupId,
+      p_passkey: passkey,
+      p_user_id: resolvedId,
+    }
+  );
+
+  return {
+    success: !!data,
+    error: error?.message,
+  };
 }
+
 
 export async function fetchAllGroups() {
   const { data, error } = await supabase
     .from("groups_public")
     .select("*")
-    .order("created_at", { ascending: false })
-    .limit(100);
-  return { data: data || [], error: error?.message };
+    .order("created_at", {
+      ascending: false,
+    });
+
+  return {
+    data: data || [],
+    error: error?.message,
+  };
 }
+
 
 export async function findGroupByName(name) {
   const { data, error } = await supabase
@@ -33,72 +75,120 @@ export async function findGroupByName(name) {
     .select("*")
     .ilike("name", name.trim())
     .maybeSingle();
-  return { data, error: error?.message };
+
+  return {
+    data,
+    error: error?.message,
+  };
 }
 
-export async function inviteToGroup(groupId, username, invitedBy) {
-  const { error } = await supabase
-    .from("group_members")
-    .upsert({ group_id: groupId, username, status: "pending", invited_by: invitedBy });
-  return { error: error?.message };
+
+export async function leaveGroup(groupId, userId) {
+  const resolvedId = userId || (await currentUserId());
+
+  const { data, error } = await supabase.rpc(
+    "leave_group",
+    {
+      p_group_id: groupId,
+      p_user_id: resolvedId,
+    }
+  );
+
+  return {
+    success: !error,
+    error: error?.message,
+  };
 }
 
-export async function acceptInvite(groupId, username) {
-  const { error } = await supabase
-    .from("group_members")
-    .update({ status: "accepted" })
-    .eq("group_id", groupId)
-    .eq("username", username);
-  return { error: error?.message };
+
+export async function deleteGroup(groupId, userId) {
+  const resolvedId = userId || (await currentUserId());
+
+  const { data, error } = await supabase.rpc(
+    "delete_group",
+    {
+      p_group_id: groupId,
+      p_user_id: resolvedId,
+    }
+  );
+
+  return {
+    success: !!data,
+    error: error?.message,
+  };
 }
 
-export async function declineInvite(groupId, username) {
-  const { error } = await supabase
-    .from("group_members")
-    .delete()
-    .eq("group_id", groupId)
-    .eq("username", username);
-  return { error: error?.message };
-}
 
-export const leaveGroup = declineInvite;
+export async function fetchMyGroups(userId) {
+  const resolvedId = userId || (await currentUserId());
 
-export async function deleteGroup(groupId, username) {
-  const { data, error } = await supabase.rpc("delete_group", {
-    p_group_id: groupId,
-    p_username: username,
-  });
-  return { success: !!data, error: error?.message };
-}
+  if (!resolvedId) {
+    return {
+      groups: [],
+      pendingGroups: [],
+      error: "Not authenticated",
+    };
+  }
 
-export async function fetchMyGroups(username) {
-  const { data: memberships } = await supabase
+  const { data: memberships, error } = await supabase
     .from("group_members")
     .select("group_id,status")
-    .eq("username", username);
+    .eq("user_id", resolvedId);
 
-  const acceptedIds = (memberships || []).filter((m) => m.status === "accepted").map((m) => m.group_id);
-  const pendingIds = (memberships || []).filter((m) => m.status === "pending").map((m) => m.group_id);
-  const allIds = [...acceptedIds, ...pendingIds];
+  if (error) {
+    return {
+      groups: [],
+      pendingGroups: [],
+      error: error.message,
+    };
+  }
 
-  if (allIds.length === 0) return { groups: [], pendingGroups: [] };
+  const ids = (memberships || [])
+    .map((m) => m.group_id);
 
-  const { data: rows } = await supabase.from("groups_public").select("*").in("id", allIds);
-  const groups = (rows || []).filter((g) => acceptedIds.includes(g.id));
-  const pendingGroups = (rows || []).filter((g) => pendingIds.includes(g.id));
-  return { groups, pendingGroups };
+  if (!ids.length) {
+    return {
+      groups: [],
+      pendingGroups: [],
+    };
+  }
+
+  const { data: groups, error: groupError } = await supabase
+    .from("groups_public")
+    .select("*")
+    .in("id", ids);
+
+  return {
+    groups: groups || [],
+    pendingGroups: [],
+    error: groupError?.message,
+  };
 }
 
+
 export async function fetchGroupMembers(groupId) {
-  const { data: members } = await supabase
+  const { data: members, error } = await supabase
     .from("group_members")
-    .select("username,status,invited_by")
+    .select("user_id,status")
     .eq("group_id", groupId)
     .eq("status", "accepted");
 
-  const usernames = (members || []).map((m) => m.username);
-  if (usernames.length === 0) return [];
+  if (error) {
+    return [];
+  }
 
-  const { data: profiles } = await supabase.from("profiles").select("*").in("username", usernames);
+  const ids = (members || [])
+    .map((m) => m.user_id)
+    .filter(Boolean);
+
+  if (!ids.length) {
+    return [];
+  }
+
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("*")
+    .in("id", ids);
+
   return profiles || [];
 }

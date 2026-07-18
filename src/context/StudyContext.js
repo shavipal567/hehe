@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { KEYS, loadData, saveData } from "../utils/storage";
 import { SUBJECT_PALETTE } from "../theme";
 import { supabase } from "../utils/supabase";
+import { useAuth } from "./AuthContext";
 
 const StudyContext = createContext(null);
 
@@ -20,7 +21,6 @@ export function StudyProvider({ children }) {
   const [profile, setProfile] = useState({ name: "Dr. Shavi" });
   const [pomodoroSettings, setPomodoroSettings] = useState(DEFAULT_POMODORO);
   const [notes, setNotes] = useState([]);
-  const [username, setUsernameState] = useState(null);
   const [friends, setFriends] = useState([]);
   const [bgPalette, setBgPaletteState] = useState("pinkDusk");
   const [darkMode, setDarkModeState] = useState(false);
@@ -29,7 +29,7 @@ export function StudyProvider({ children }) {
 
   useEffect(() => {
     (async () => {
-      const [s, sess, t, g, p, pomo, onb, n, uname, fr, bg, dm] = await Promise.all([
+      const [s, sess, t, g, p, pomo, onb, n, fr, bg, dm] = await Promise.all([
         loadData(KEYS.SUBJECTS, DEFAULT_SUBJECTS),
         loadData(KEYS.SESSIONS, []),
         loadData(KEYS.TODOS, []),
@@ -38,7 +38,6 @@ export function StudyProvider({ children }) {
         loadData(KEYS.POMODORO, DEFAULT_POMODORO),
         loadData(KEYS.ONBOARDED, false),
         loadData(KEYS.NOTES, []),
-        loadData(KEYS.USERNAME, null),
         loadData(KEYS.FRIENDS, []),
         loadData(KEYS.BG_PALETTE, "pinkDusk"),
         loadData(KEYS.DARK_MODE, false),
@@ -51,7 +50,6 @@ export function StudyProvider({ children }) {
       setPomodoroSettings(pomo);
       setOnboardedState(onb);
       setNotes(n);
-      setUsernameState(uname);
       setFriends(fr);
       setBgPaletteState(bg);
       setDarkModeState(dm);
@@ -67,21 +65,22 @@ export function StudyProvider({ children }) {
   useEffect(() => { if (loaded) saveData(KEYS.POMODORO, pomodoroSettings); }, [pomodoroSettings, loaded]);
   useEffect(() => { if (loaded) saveData(KEYS.ONBOARDED, onboarded); }, [onboarded, loaded]);
   useEffect(() => { if (loaded) saveData(KEYS.NOTES, notes); }, [notes, loaded]);
-  useEffect(() => { if (loaded) saveData(KEYS.USERNAME, username); }, [username, loaded]);
   useEffect(() => { if (loaded) saveData(KEYS.FRIENDS, friends); }, [friends, loaded]);
   useEffect(() => { if (loaded) saveData(KEYS.BG_PALETTE, bgPalette); }, [bgPalette, loaded]);
   useEffect(() => { if (loaded) saveData(KEYS.DARK_MODE, darkMode); }, [darkMode, loaded]);
 
+  const { user } = useAuth();
+
   useEffect(() => {
-    if (!loaded || !username) return;
+    if (!loaded || !user) return;
     const totalSeconds = sessions.reduce((sum, s) => sum + s.seconds, 0);
     supabase
       .from("profiles")
-      .upsert({ username, display_name: profile.name || username, total_seconds: totalSeconds, updated_at: new Date().toISOString() })
+      .upsert({ id: user.id, display_name: profile.name, total_seconds: totalSeconds, updated_at: new Date().toISOString() })
       .then(({ error }) => {
-        if (error) console.warn("Group sync failed (will retry next change):", error.message);
+        if (error) console.warn("Profile sync failed (will retry next change):", error.message);
       });
-  }, [sessions, username, loaded, profile.name]);
+  }, [sessions, user, loaded, profile.name]);
 
   const addSession = useCallback((subjectId, seconds, mode = "stopwatch") => {
     setSessions((prev) => [
@@ -160,31 +159,6 @@ export function StudyProvider({ children }) {
     setNotes((prev) => prev.filter((n) => n.id !== id));
   }, []);
 
-  const claimUsername = useCallback(async (desiredUsername, displayName) => {
-    const clean = desiredUsername.trim().toLowerCase().replace(/[^a-z0-9_]/g, "");
-    if (!clean) return { error: "Please enter a valid username (letters, numbers, underscores)." };
-
-    const { data: existing } = await supabase
-      .from("profiles")
-      .select("username")
-      .eq("username", clean)
-      .maybeSingle();
-
-    if (existing) {
-      return { error: "That username is already taken — try another." };
-    }
-
-    const totalSeconds = sessions.reduce((sum, s) => sum + s.seconds, 0);
-    const { error } = await supabase
-      .from("profiles")
-      .insert({ username: clean, display_name: displayName || clean, total_seconds: totalSeconds });
-
-    if (error) return { error: error.message };
-
-    setUsernameState(clean);
-    return { error: null };
-  }, [sessions]);
-
   const addFriend = useCallback((friendUsername) => {
     const clean = friendUsername.trim().toLowerCase().replace(/[^a-z0-9_]/g, "");
     if (!clean) return;
@@ -205,12 +179,12 @@ export function StudyProvider({ children }) {
 
   const value = {
     subjects, sessions, todos, groupMembers, profile, pomodoroSettings, notes, onboarded, loaded,
-    username, friends, bgPalette, darkMode,
+    friends, bgPalette, darkMode,
     addSession, addSubject, removeSubject,
     addTodo, toggleTodo, removeTodo,
     addGroupMember, logGroupMemberTime, removeGroupMember,
     addNote, updateNote, removeNote,
-    claimUsername, addFriend, removeFriend, setBgPalette, setDarkMode,
+    addFriend, removeFriend, setBgPalette, setDarkMode,
     setProfile, setPomodoroSettings, completeOnboarding,
   };
 

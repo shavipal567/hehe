@@ -3,6 +3,7 @@ import {
   View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, SafeAreaView, ActivityIndicator, Alert,
 } from "react-native";
 import { useStudy } from "../context/StudyContext";
+import { useAuth } from "../context/AuthContext";
 import { supabase } from "../utils/supabase";
 import {
   createGroup, joinGroupWithPasskey, fetchAllGroups, inviteToGroup,
@@ -18,20 +19,11 @@ function formatHours(totalSeconds) {
 }
 
 export default function GroupsScreen() {
-  const { username, claimUsername, profile, darkMode } = useStudy();
+  const { profile, darkMode } = useStudy();
+  const { user } = useAuth();
   const theme = getTheme(darkMode);
   const styles = makeStyles(theme, darkMode);
   const [selectedGroup, setSelectedGroup] = useState(null);
-
-  if (!username) {
-    return (
-      <SkyBackground>
-        <SafeAreaView style={styles.container}>
-          <ClaimUsernameCard claimUsername={claimUsername} displayName={profile.name} />
-        </SafeAreaView>
-      </SkyBackground>
-    );
-  }
 
   return (
     <SkyBackground>
@@ -39,61 +31,19 @@ export default function GroupsScreen() {
         {selectedGroup ? (
           <GroupDetail
             group={selectedGroup}
-            username={username}
             onBack={() => setSelectedGroup(null)}
           />
         ) : (
-          <GroupsList username={username} onOpenGroup={setSelectedGroup} />
+          <GroupsList onOpenGroup={setSelectedGroup} />
         )}
       </SafeAreaView>
     </SkyBackground>
   );
 }
 
-function ClaimUsernameCard({ claimUsername, displayName }) {
+function GroupsList({ onOpenGroup }) {
   const { darkMode } = useStudy();
-  const theme = getTheme(darkMode);
-  const styles = makeStyles(theme, darkMode);
-  const [value, setValue] = useState("");
-  const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
-
-  const handleSave = async () => {
-    setError("");
-    setBusy(true);
-    const { error: err } = await claimUsername(value, displayName);
-    setBusy(false);
-    if (err) setError(err);
-  };
-
-  return (
-    <View style={styles.centerWrap}>
-      <View style={styles.claimCard}>
-        <Text style={styles.claimEmoji}>👯‍♀️✨</Text>
-        <Text style={styles.claimTitle}>Join the Study Group</Text>
-        <Text style={styles.claimSubtitle}>
-          Pick a username once — you'll use this to create or join groups.
-        </Text>
-        <TextInput
-          style={styles.claimInput}
-          placeholder="choose_a_username"
-          placeholderTextColor={theme.muted}
-          value={value}
-          onChangeText={setValue}
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-        {!!error && <Text style={styles.errorText}>{error}</Text>}
-        <TouchableOpacity style={styles.claimButton} onPress={handleSave} disabled={busy}>
-          {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.claimButtonText}>Save username</Text>}
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-}
-
-function GroupsList({ username, onOpenGroup }) {
-  const { darkMode } = useStudy();
+  const { user } = useAuth();
   const theme = getTheme(darkMode);
   const styles = makeStyles(theme, darkMode);
 
@@ -116,19 +66,19 @@ function GroupsList({ username, onOpenGroup }) {
   const refresh = useCallback(async () => {
     setLoading(true);
     const [{ groups: g, pendingGroups: p }, { data: all }] = await Promise.all([
-      fetchMyGroups(username),
+      fetchMyGroups(user.id, user.id),
       fetchAllGroups(),
     ]);
     setGroups(g);
     setPendingGroups(p);
     setAllGroups(all);
     setLoading(false);
-  }, [username]);
+  }, [user?.id]);
 
   useEffect(() => {
     refresh();
     const channel = supabase
-      .channel("group-members-" + username)
+      .channel("group-members-" + user.id)
       .on("postgres_changes", { event: "*", schema: "public", table: "group_members" }, () => refresh())
       .on("postgres_changes", { event: "*", schema: "public", table: "groups" }, () => refresh())
       .subscribe();
@@ -145,7 +95,7 @@ function GroupsList({ username, onOpenGroup }) {
       return;
     }
     setCreateBusy(true);
-    const { id, error } = await createGroup(createName.trim(), createPasskey.trim(), username);
+    const { id, error } = await createGroup(createName.trim(), createPasskey.trim(), user.id, user.id);
     setCreateBusy(false);
     if (error) {
       setCreateError(error.includes("duplicate") || error.includes("unique") ? "That group name is taken — try another." : error);
@@ -171,7 +121,7 @@ function GroupsList({ username, onOpenGroup }) {
       return;
     }
     setJoinBusy(true);
-    const { success, error } = await joinGroupWithPasskey(joiningGroup.id, joinPasskeyInput.trim(), username);
+    const { success, error } = await joinGroupWithPasskey(joiningGroup.id, joinPasskeyInput.trim(), user.id, user.id);
     setJoinBusy(false);
     if (error) {
       setJoinError(error);
@@ -187,19 +137,18 @@ function GroupsList({ username, onOpenGroup }) {
   };
 
   const handleAccept = async (groupId) => {
-    await acceptInvite(groupId, username);
+    await acceptInvite(groupId, user.id, user.id);
     refresh();
   };
 
   const handleDecline = async (groupId) => {
-    await declineInvite(groupId, username);
+    await declineInvite(groupId, user.id, user.id);
     refresh();
   };
 
   return (
     <View style={{ flex: 1 }}>
       <Text style={styles.title}>Study Groups 🏆</Text>
-      <Text style={styles.subtitle}>You're @{username}.</Text>
 
       <View style={styles.actionRow}>
         <TouchableOpacity style={styles.actionButton} onPress={() => setShowCreate((v) => !v)}>
@@ -308,8 +257,9 @@ function GroupsList({ username, onOpenGroup }) {
   );
 }
 
-function GroupDetail({ group, username, onBack }) {
+function GroupDetail({ group, onBack }) {
   const { darkMode } = useStudy();
+  const { user } = useAuth();
   const theme = getTheme(darkMode);
   const styles = makeStyles(theme, darkMode);
 
@@ -342,7 +292,7 @@ function GroupDetail({ group, username, onBack }) {
     setInviteMsg("");
     const clean = inviteInput.trim().toLowerCase().replace(/[^a-z0-9_]/g, "");
     if (!clean) return;
-    const { error } = await inviteToGroup(group.id, clean, username);
+    const { error } = await inviteToGroup(group.id, clean, user.id, user.id);
     if (error) {
       setInviteMsg("Couldn't invite — check the username exists.");
     } else {
@@ -352,11 +302,11 @@ function GroupDetail({ group, username, onBack }) {
   };
 
   const handleLeave = async () => {
-    await leaveGroup(group.id, username);
+    await leaveGroup(group.id, user.id, user.id);
     onBack();
   };
 
-  const isOwner = group.created_by === username;
+  const isOwner = group.created_by_user_id === user.id;
 
   const handleDelete = () => {
     Alert.alert(
@@ -368,7 +318,7 @@ function GroupDetail({ group, username, onBack }) {
           text: "Delete",
           style: "destructive",
           onPress: async () => {
-            const { success, error } = await deleteGroup(group.id, username);
+            const { success, error } = await deleteGroup(group.id, user.id, user.id);
             if (success) onBack();
             else Alert.alert("Couldn't delete group", error || "Please try again.");
           },
@@ -407,10 +357,10 @@ function GroupDetail({ group, username, onBack }) {
       ) : (
         <FlatList
           data={sorted}
-          keyExtractor={(item) => item.username}
+          keyExtractor={(item) => item.id}
           contentContainerStyle={{ paddingTop: 12, paddingBottom: 40 }}
           renderItem={({ item, index }) => {
-            const isMe = item.username === username;
+            const isMe = item.id === user.id;
             const barPct = Math.max(6, Math.round((item.total_seconds / topSeconds) * 100));
             return (
               <View style={styles.row}>
@@ -450,23 +400,6 @@ function makeStyles(theme, darkMode) {
   title: { fontSize: 26, fontWeight: "800", color: theme.text, marginTop: 8 },
   subtitle: { color: theme.muted, marginTop: 4, marginBottom: 8, lineHeight: 18 },
 
-  centerWrap: { flex: 1, justifyContent: "center" },
-  claimCard: {
-    backgroundColor: theme.cardBg, borderRadius: 28, padding: 28, alignItems: "center",
-    borderWidth: 1, borderColor: theme.cardBorder, ...cardShadow,
-  },
-  claimEmoji: { fontSize: 30, marginBottom: 8 },
-  claimTitle: { fontSize: 22, fontWeight: "800", color: theme.text, textAlign: "center" },
-  claimSubtitle: { color: theme.muted, textAlign: "center", marginTop: 8, marginBottom: 18, lineHeight: 20 },
-  claimInput: {
-    width: "100%", backgroundColor: "#fff", borderRadius: 14, paddingHorizontal: 16,
-    paddingVertical: 14, fontSize: 16, textAlign: "center", color: "#3A2E45",
-  },
-  claimButton: {
-    width: "100%", backgroundColor: theme.primary, borderRadius: 16, paddingVertical: 16,
-    alignItems: "center", marginTop: 16,
-  },
-  claimButtonText: { color: "#fff", fontWeight: "700", fontSize: 15 },
   errorText: { color: theme.danger, marginTop: 8, fontWeight: "600", fontSize: 13 },
 
   actionRow: { flexDirection: "row", marginTop: 8 },
