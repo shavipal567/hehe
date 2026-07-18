@@ -2,8 +2,9 @@ import React from "react";
 import { StatusBar } from "expo-status-bar";
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { Text } from "react-native";
+import { Text, View, ActivityIndicator } from "react-native";
 
+import { AuthProvider, useAuth } from "./src/context/AuthContext";
 import { StudyProvider, useStudy } from "./src/context/StudyContext";
 import HomeScreen from "./src/screens/HomeScreen";
 import PlannerScreen from "./src/screens/PlannerScreen";
@@ -14,6 +15,7 @@ import SubjectsScreen from "./src/screens/SubjectsScreen";
 import ForYouScreen from "./src/screens/ForYouScreen";
 import NotesScreen from "./src/screens/NotesScreen";
 import WelcomeScreen from "./src/screens/WelcomeScreen";
+import AuthScreen from "./src/screens/AuthScreen";
 import { getTheme } from "./src/theme";
 
 const Tab = createBottomTabNavigator();
@@ -58,7 +60,26 @@ function MainTabs() {
 
 function RootRouter() {
   const { loaded, onboarded, darkMode } = useStudy();
-  if (!loaded) return null;
+  const { user, authLoading } = useAuth();
+
+  if (!loaded || authLoading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: darkMode ? "#1B1428" : "#FFF0F6", alignItems: "center", justifyContent: "center" }}>
+        <StatusBar style={darkMode ? "light" : "dark"} />
+        <ActivityIndicator size="large" color={darkMode ? "#FF7AAE" : "#F2578D"} />
+      </View>
+    );
+  }
+
+  if (!user) {
+    return (
+      <>
+        <StatusBar style={darkMode ? "light" : "dark"} />
+        <AuthScreen />
+      </>
+    );
+  }
+
   return (
     <>
       <StatusBar style={darkMode ? "light" : "dark"} />
@@ -69,10 +90,12 @@ function RootRouter() {
 
 export default function App() {
   return (
-    <StudyProvider>
-      <NavigationContainer>
-        <RootRouter />
-      </NavigationContainer>
-    </StudyProvider>
+    <AuthProvider>
+      <StudyProvider>
+        <NavigationContainer>
+          <RootRouter />
+        </NavigationContainer>
+      </StudyProvider>
+    </AuthProvider>
   );
 }

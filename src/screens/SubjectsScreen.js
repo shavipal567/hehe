@@ -3,14 +3,18 @@ import {
   View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, SafeAreaView, ScrollView,
 } from "react-native";
 import { useStudy } from "../context/StudyContext";
+import { useAuth } from "../context/AuthContext";
 import SkyBackground from "../components/SkyBackground";
 import { getTheme, SUBJECT_PALETTE, BACKGROUND_PALETTES, cardShadow } from "../theme";
+import SettingsScreen from "./SettingsScreen";
 
 export default function SubjectsScreen() {
   const { subjects, addSubject, removeSubject, profile, setProfile, pomodoroSettings, setPomodoroSettings, bgPalette, setBgPalette, darkMode, setDarkMode } = useStudy();
+  const { user } = useAuth();
   const theme = getTheme(darkMode);
   const styles = makeStyles(theme, darkMode);
   const [name, setName] = useState("");
+  const [showSettings, setShowSettings] = useState(false);
 
   const handleAdd = () => {
     if (!name.trim()) return;
@@ -22,11 +26,22 @@ export default function SubjectsScreen() {
     setPomodoroSettings((p) => ({ ...p, [key]: Math.max(1, p[key] + delta) }));
   };
 
+  if (showSettings) {
+    return <SettingsScreen onBack={() => setShowSettings(false)} />;
+  }
+
   return (
     <SkyBackground>
       <SafeAreaView style={styles.container}>
         <ScrollView>
-          <Text style={styles.title}>Subjects & Profile</Text>
+          <View style={styles.titleRow}>
+            <Text style={styles.title}>Subjects & Profile</Text>
+            {!!user && (
+              <TouchableOpacity onPress={() => setShowSettings(true)} style={styles.gearButton}>
+                <Text style={styles.gearIcon}>⚙️</Text>
+              </TouchableOpacity>
+            )}
+          </View>
 
           <Text style={styles.label}>Your name</Text>
           <TextInput
@@ -132,7 +147,10 @@ export default function SubjectsScreen() {
 function makeStyles(theme, darkMode) {
   return StyleSheet.create({
   container: { flex: 1, padding: 20 },
-  title: { fontSize: 28, fontWeight: "800", color: theme.text, marginTop: 8, marginBottom: 12 },
+  titleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 8, marginBottom: 12 },
+  title: { fontSize: 28, fontWeight: "800", color: theme.text },
+  gearButton: { padding: 4, marginLeft: 8 },
+  gearIcon: { fontSize: 22 },
   label: { color: theme.muted, fontWeight: "600", marginBottom: 6 },
   input: {
     backgroundColor: "#fff", borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12,
