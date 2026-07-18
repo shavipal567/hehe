@@ -6,8 +6,16 @@ import { useStudy } from "../context/StudyContext";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../utils/supabase";
 import {
-  createGroup, joinGroupWithPasskey, fetchAllGroups, inviteToGroup,
-  acceptInvite, declineInvite, leaveGroup, deleteGroup, fetchMyGroups, fetchGroupMembers,
+  createGroup,
+  fetchAllGroups,
+  findGroupByName,
+  fetchMyGroups,
+  fetchGroupMembers,
+  requestJoinGroup,
+  acceptGroupRequest,
+  rejectGroupRequest,
+  inviteUserToGroup,
+  acceptGroupInvite,
 } from "../utils/groups";
 import SkyBackground from "../components/SkyBackground";
 import { getTheme, cardShadow } from "../theme";
@@ -19,10 +27,9 @@ function formatHours(totalSeconds) {
 }
 
 export default function GroupsScreen() {
-  const { profile, darkMode } = useStudy();
-  const { user } = useAuth();
+  const { darkMode } = useStudy();
   const theme = getTheme(darkMode);
-  const styles = makeStyles(theme, darkMode);
+  const styles = makeStyles(theme);
   const [selectedGroup, setSelectedGroup] = useState(null);
 
   return (
@@ -45,33 +52,53 @@ function GroupsList({ onOpenGroup }) {
   const { darkMode } = useStudy();
   const { user } = useAuth();
   const theme = getTheme(darkMode);
-  const styles = makeStyles(theme, darkMode);
+  const styles = makeStyles(theme);
 
   const [groups, setGroups] = useState([]);
-  const [pendingGroups, setPendingGroups] = useState([]);
   const [allGroups, setAllGroups] = useState([]);
+  const [invitations, setInvitations] = useState([]);
+  const [joinRequests, setJoinRequests] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const [showCreate, setShowCreate] = useState(false);
   const [createName, setCreateName] = useState("");
-  const [createPasskey, setCreatePasskey] = useState("");
   const [createError, setCreateError] = useState("");
   const [createBusy, setCreateBusy] = useState(false);
 
-  const [joiningGroup, setJoiningGroup] = useState(null);
-  const [joinPasskeyInput, setJoinPasskeyInput] = useState("");
-  const [joinError, setJoinError] = useState("");
-  const [joinBusy, setJoinBusy] = useState(false);
+  const [discoverSearch, setDiscoverSearch] = useState("");
+  const [searchBusy, setSearchBusy] = useState(false);
+
+  const [joinBusyId, setJoinBusyId] = useState(null);
 
   const refresh = useCallback(async () => {
     setLoading(true);
-    const [{ groups: g, pendingGroups: p }, { data: all }] = await Promise.all([
-      fetchMyGroups(user.id, user.id),
+
+    const [{ groups: myGroups }, { groups: all }] = await Promise.all([
+      fetchMyGroups(user.id),
       fetchAllGroups(),
     ]);
-    setGroups(g);
-    setPendingGroups(p);
-    setAllGroups(all);
+    setGroups(myGroups || []);
+    setAllGroups(all || []);
+
+    const ownedIds = (myGroups || []).filter((g) => g.owner_id === user.id).map((g) => g.id);
+
+    const [{ data: inviteRows }, { data: requestRows }] = await Promise.all([
+      supabase
+        .from("group_invites")
+        .select("id, group_id, invited_by, groups_public(name)")
+        .eq("invited_user_id", user.id)
+        .eq("status", "pending"),
+      ownedIds.length > 0
+        ? supabase
+            .from("group_requests")
+            .select("id, group_id, user_id, profiles(username), groups_public(name)")
+            .in("group_id", ownedIds)
+            .eq("status", "pending")
+        : Promise.resolve({ data: [] }),
+    ]);
+
+    setInvitations(inviteRows || []);
+    setJoinRequests(requestRows || []);
     setLoading(false);
   }, [user?.id]);
 
@@ -81,68 +108,93 @@ function GroupsList({ onOpenGroup }) {
       .channel("group-members-" + user.id)
       .on("postgres_changes", { event: "*", schema: "public", table: "group_members" }, () => refresh())
       .on("postgres_changes", { event: "*", schema: "public", table: "groups" }, () => refresh())
+      .on("postgres_changes", { event: "*", schema: "public", table: "group_invites" }, () => refresh())
+      .on("postgres_changes", { event: "*", schema: "public", table: "group_requests" }, () => refresh())
       .subscribe();
     return () => supabase.removeChannel(channel);
   }, [refresh]);
 
-  const myGroupIds = new Set([...groups, ...pendingGroups].map((g) => g.id));
-  const discoverable = allGroups.filter((g) => !myGroupIds.has(g.id));
+  const myGroupIds = new Set(groups.map((g) => g.id));
+  const discoverable = allGroups
+    .filter((g) => !myGroupIds.has(g.id))
+    .filter((g) => (g.name || "").toLowerCase().includes(discoverSearch.trim().toLowerCase()));
 
   const handleCreate = async () => {
     setCreateError("");
-    if (!createName.trim() || !createPasskey.trim()) {
-      setCreateError("Enter a group name and a passkey.");
+    if (!createName.trim()) {
+      setCreateError("Enter a group name.");
       return;
     }
     setCreateBusy(true);
-    const { id, error } = await createGroup(createName.trim(), createPasskey.trim(), user.id, user.id);
+    const { error } = await createGroup(createName.trim(), user.id);
     setCreateBusy(false);
     if (error) {
       setCreateError(error.includes("duplicate") || error.includes("unique") ? "That group name is taken — try another." : error);
       return;
     }
     setCreateName("");
-    setCreatePasskey("");
     setShowCreate(false);
     refresh();
   };
 
-  const openJoinPrompt = (group) => {
-    setJoiningGroup(joiningGroup?.id === group.id ? null : group);
-    setJoinPasskeyInput("");
-    setJoinError("");
+  const handleSearch = async () => {
+    if (!discoverSearch.trim()) return;
+    setSearchBusy(true);
+    const { data, error } = await findGroupByName(discoverSearch.trim());
+    setSearchBusy(false);
+    if (!error && data && !allGroups.some((g) => g.id === data.id)) {
+      setAllGroups((prev) => [data, ...prev]);
+    }
   };
 
-  const handleJoin = async () => {
-    if (!joiningGroup) return;
-    setJoinError("");
-    if (!joinPasskeyInput.trim()) {
-      setJoinError("Enter the passkey.");
+  const handleRequestJoin = async (group) => {
+    setJoinBusyId(group.id);
+    const { success, error } = await requestJoinGroup(group.id, user.id);
+    setJoinBusyId(null);
+    if (error || !success) {
+      Alert.alert("Couldn't send request", error || "Please try again.");
       return;
     }
-    setJoinBusy(true);
-    const { success, error } = await joinGroupWithPasskey(joiningGroup.id, joinPasskeyInput.trim(), user.id, user.id);
-    setJoinBusy(false);
-    if (error) {
-      setJoinError(error);
-      return;
-    }
+    Alert.alert("Request sent", `Your request to join "${group.name}" is pending approval.`);
+    refresh();
+  };
+
+  const handleAcceptInvite = async (invite) => {
+    const { success, error } = await acceptGroupInvite(invite.id);
     if (!success) {
-      setJoinError("Wrong passkey for that group.");
+      Alert.alert("Couldn't accept invite", error || "Please try again.");
       return;
     }
-    setJoiningGroup(null);
-    setJoinPasskeyInput("");
     refresh();
   };
 
-  const handleAccept = async (groupId) => {
-    await acceptInvite(groupId, user.id, user.id);
+  const handleRejectInvite = async (invite) => {
+    const { error } = await supabase
+      .from("group_invites")
+      .update({ status: "rejected" })
+      .eq("id", invite.id);
+    if (error) {
+      Alert.alert("Couldn't reject invite", error.message);
+      return;
+    }
     refresh();
   };
 
-  const handleDecline = async (groupId) => {
-    await declineInvite(groupId, user.id, user.id);
+  const handleAcceptRequest = async (request) => {
+    const { success, error } = await acceptGroupRequest(request.id);
+    if (!success) {
+      Alert.alert("Couldn't accept request", error || "Please try again.");
+      return;
+    }
+    refresh();
+  };
+
+  const handleRejectRequest = async (request) => {
+    const { success, error } = await rejectGroupRequest(request.id);
+    if (!success) {
+      Alert.alert("Couldn't reject request", error || "Please try again.");
+      return;
+    }
     refresh();
   };
 
@@ -162,10 +214,6 @@ function GroupsList({ onOpenGroup }) {
             style={styles.formInput} placeholder="Group name" placeholderTextColor={theme.muted}
             value={createName} onChangeText={setCreateName}
           />
-          <TextInput
-            style={styles.formInput} placeholder="Set a passkey" placeholderTextColor={theme.muted}
-            value={createPasskey} onChangeText={setCreatePasskey} secureTextEntry
-          />
           {!!createError && <Text style={styles.errorText}>{createError}</Text>}
           <TouchableOpacity style={styles.formSubmit} onPress={handleCreate} disabled={createBusy}>
             {createBusy ? <ActivityIndicator color="#fff" /> : <Text style={styles.formSubmitText}>Create</Text>}
@@ -180,17 +228,36 @@ function GroupsList({ onOpenGroup }) {
           data={[]}
           ListHeaderComponent={
             <>
-              {pendingGroups.length > 0 && (
+              {invitations.length > 0 && (
                 <View style={{ marginTop: 8 }}>
                   <Text style={styles.sectionLabel}>Invitations</Text>
-                  {pendingGroups.map((g) => (
-                    <View key={g.id} style={styles.inviteRow}>
-                      <Text style={styles.inviteName}>{g.name}</Text>
-                      <TouchableOpacity onPress={() => handleAccept(g.id)} style={styles.acceptButton}>
+                  {invitations.map((inv) => (
+                    <View key={inv.id} style={styles.inviteRow}>
+                      <Text style={styles.inviteName}>{inv.groups_public?.name}</Text>
+                      <TouchableOpacity onPress={() => handleAcceptInvite(inv)} style={styles.acceptButton}>
                         <Text style={styles.acceptButtonText}>Accept</Text>
                       </TouchableOpacity>
-                      <TouchableOpacity onPress={() => handleDecline(g.id)}>
-                        <Text style={styles.declineText}>Decline</Text>
+                      <TouchableOpacity onPress={() => handleRejectInvite(inv)}>
+                        <Text style={styles.declineText}>Reject</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              {joinRequests.length > 0 && (
+                <View style={{ marginTop: 8 }}>
+                  <Text style={styles.sectionLabel}>Join Requests</Text>
+                  {joinRequests.map((req) => (
+                    <View key={req.id} style={styles.inviteRow}>
+                      <Text style={styles.inviteName}>
+                        {req.profiles?.username || "Someone"} → {req.groups_public?.name}
+                      </Text>
+                      <TouchableOpacity onPress={() => handleAcceptRequest(req)} style={styles.acceptButton}>
+                        <Text style={styles.acceptButtonText}>Accept</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => handleRejectRequest(req)}>
+                        <Text style={styles.declineText}>Reject</Text>
                       </TouchableOpacity>
                     </View>
                   ))}
@@ -210,40 +277,45 @@ function GroupsList({ onOpenGroup }) {
               )}
 
               <Text style={styles.sectionLabel}>Discover groups</Text>
+              <View style={styles.inviteRow2}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Search group name..."
+                  placeholderTextColor={theme.muted}
+                  value={discoverSearch}
+                  onChangeText={setDiscoverSearch}
+                  onSubmitEditing={handleSearch}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                <TouchableOpacity style={styles.addButton} onPress={handleSearch} disabled={searchBusy}>
+                  {searchBusy ? <ActivityIndicator color="#fff" /> : <Text style={styles.addButtonText}>Search</Text>}
+                </TouchableOpacity>
+              </View>
+
               {discoverable.length === 0 ? (
                 <Text style={styles.empty}>
-                  No other groups exist yet — be the first to create one, or ask a friend for their group name.
+                  No other groups found — be the first to create one, or ask a friend for their group name.
                 </Text>
               ) : (
                 discoverable.map((g) => (
                   <View key={g.id} style={styles.discoverRowWrap}>
-                    <TouchableOpacity style={styles.discoverRow} onPress={() => openJoinPrompt(g)}>
+                    <View style={styles.discoverRow}>
                       <View style={{ flex: 1 }}>
                         <Text style={styles.groupName}>{g.name}</Text>
-                        <Text style={styles.discoverCreator}>by @{g.created_by}</Text>
                       </View>
-                      <Text style={styles.groupArrow}>{joiningGroup?.id === g.id ? "︿" : "＋"}</Text>
-                    </TouchableOpacity>
-
-                    {joiningGroup?.id === g.id && (
-                      <View style={styles.joinPromptRow}>
-                        <TextInput
-                          style={styles.joinPromptInput}
-                          placeholder="Enter passkey to join..."
-                          placeholderTextColor={theme.muted}
-                          value={joinPasskeyInput}
-                          onChangeText={setJoinPasskeyInput}
-                          secureTextEntry
-                          autoFocus
-                        />
-                        <TouchableOpacity style={styles.joinPromptButton} onPress={handleJoin} disabled={joinBusy}>
-                          {joinBusy ? <ActivityIndicator color="#fff" /> : <Text style={styles.joinPromptButtonText}>Join</Text>}
-                        </TouchableOpacity>
-                      </View>
-                    )}
-                    {joiningGroup?.id === g.id && !!joinError && (
-                      <Text style={styles.errorText}>{joinError}</Text>
-                    )}
+                      <TouchableOpacity
+                        style={styles.joinPromptButton}
+                        onPress={() => handleRequestJoin(g)}
+                        disabled={joinBusyId === g.id}
+                      >
+                        {joinBusyId === g.id ? (
+                          <ActivityIndicator color="#fff" />
+                        ) : (
+                          <Text style={styles.joinPromptButtonText}>Request to Join</Text>
+                        )}
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 ))
               )}
@@ -261,7 +333,7 @@ function GroupDetail({ group, onBack }) {
   const { darkMode } = useStudy();
   const { user } = useAuth();
   const theme = getTheme(darkMode);
-  const styles = makeStyles(theme, darkMode);
+  const styles = makeStyles(theme);
 
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -285,48 +357,58 @@ function GroupDetail({ group, onBack }) {
     return () => supabase.removeChannel(channel);
   }, [refresh]);
 
-  const sorted = [...members].sort((a, b) => b.total_seconds - a.total_seconds);
-  const topSeconds = Math.max(...sorted.map((m) => m.total_seconds), 1);
+  const sorted = [...(members || [])].sort((a, b) => (b.total_seconds || 0) - (a.total_seconds || 0));
+  const topSeconds = Math.max(...sorted.map((m) => m.total_seconds || 0), 1);
 
   const handleInvite = async () => {
     setInviteMsg("");
-    const clean = inviteInput.trim().toLowerCase().replace(/[^a-z0-9_]/g, "");
-    if (!clean) return;
-    const { error } = await inviteToGroup(group.id, clean, user.id, user.id);
-    if (error) {
-      setInviteMsg("Couldn't invite — check the username exists.");
+    const targetUserId = inviteInput.trim();
+    if (!targetUserId) return;
+    const { success, error } = await inviteUserToGroup(group.id, targetUserId, user.id);
+    if (error || !success) {
+      setInviteMsg("Couldn't invite — check the user ID and try again.");
     } else {
-      setInviteMsg(`Invited @${clean}.`);
+      setInviteMsg("Invitation sent.");
       setInviteInput("");
     }
   };
 
   const handleLeave = async () => {
-    await leaveGroup(group.id, user.id, user.id);
+    const { error } = await supabase.rpc("leave_group", {
+      p_group_id: group.id,
+      p_user_id: user.id,
+    });
+    if (error) {
+      Alert.alert("Couldn't leave group", error.message);
+      return;
+    }
     onBack();
   };
 
-  const isOwner = group.created_by_user_id === user.id;
+  const isOwner = group.owner_id === user.id;
 
-  const handleDelete = () => {
-    Alert.alert(
-      "Delete this group?",
-      `"${group.name}" will be deleted for everyone, including all members. This can't be undone.`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            const { success, error } = await deleteGroup(group.id, user.id, user.id);
-            if (success) onBack();
-            else Alert.alert("Couldn't delete group", error || "Please try again.");
-          },
-        },
-      ]
-    );
-  };
+const handleDelete = async () => {
+  const confirmed = window.confirm(
+    `Delete "${group.name}"?\n\nThis will permanently delete the group for everyone.`
+  );
 
+  if (!confirmed) return;
+
+  const { data, error } = await supabase.rpc("delete_group", {
+    p_group_id: group.id,
+    p_user_id: user.id,
+  });
+
+  console.log("data:", data);
+  console.log("error:", error);
+
+  if (data) {
+    alert("Group deleted.");
+    onBack();
+  } else {
+    alert(error?.message || "Delete failed.");
+  }
+};
   return (
     <View style={{ flex: 1 }}>
       <TouchableOpacity onPress={onBack} style={styles.backRow}>
@@ -338,7 +420,7 @@ function GroupDetail({ group, onBack }) {
       <View style={styles.inviteRow2}>
         <TextInput
           style={styles.input}
-          placeholder="Invite by username..."
+          placeholder="Invite by user ID..."
           placeholderTextColor={theme.muted}
           value={inviteInput}
           onChangeText={setInviteInput}
@@ -394,7 +476,7 @@ function GroupDetail({ group, onBack }) {
   );
 }
 
-function makeStyles(theme, darkMode) {
+function makeStyles(theme) {
   return StyleSheet.create({
   container: { flex: 1, padding: 20 },
   title: { fontSize: 26, fontWeight: "800", color: theme.text, marginTop: 8 },
@@ -409,7 +491,7 @@ function makeStyles(theme, darkMode) {
   actionButtonText: { color: "#fff", fontWeight: "700" },
 
   formCard: { backgroundColor: theme.cardBg, borderRadius: 16, padding: 14, marginTop: 12, ...cardShadow },
-  formInput: { backgroundColor: "#fff", borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, marginBottom: 8, color: "#3A2E45" },
+  formInput: { backgroundColor: theme.cardBg, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, marginBottom: 8, color: theme.text },
   formSubmit: { backgroundColor: theme.primary, borderRadius: 12, paddingVertical: 13, alignItems: "center" },
   formSubmitText: { color: "#fff", fontWeight: "700" },
 
@@ -440,8 +522,8 @@ function makeStyles(theme, darkMode) {
   discoverCreator: { color: theme.muted, fontSize: 12, marginTop: 2 },
   joinPromptRow: { flexDirection: "row", marginTop: 8 },
   joinPromptInput: {
-    flex: 1, backgroundColor: "#fff", borderRadius: 12, paddingHorizontal: 14,
-    paddingVertical: 10, marginRight: 8, color: "#3A2E45",
+    flex: 1, backgroundColor: theme.cardBg, borderRadius: 12, paddingHorizontal: 14,
+    paddingVertical: 10, marginRight: 8, color: theme.text,
   },
   joinPromptButton: { backgroundColor: theme.primary, borderRadius: 12, paddingHorizontal: 18, justifyContent: "center" },
   joinPromptButtonText: { color: "#fff", fontWeight: "700" },
@@ -450,7 +532,7 @@ function makeStyles(theme, darkMode) {
   backText: { color: theme.primary, fontWeight: "700" },
 
   inviteRow2: { flexDirection: "row", marginTop: 8 },
-  input: { flex: 1, backgroundColor: "#fff", borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, marginRight: 8, color: "#3A2E45" },
+  input: { flex: 1, backgroundColor: theme.cardBg, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, marginRight: 8, color: theme.text },
   addButton: { backgroundColor: theme.primary, borderRadius: 12, paddingHorizontal: 18, justifyContent: "center" },
   addButtonText: { color: "#fff", fontWeight: "700" },
   inviteMsg: { color: theme.muted, marginTop: 6, fontSize: 13 },
