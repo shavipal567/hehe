@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { KEYS, loadData, saveData } from "../utils/storage";
-import { SUBJECT_PALETTE, getTheme } from "../theme";
+import { SUBJECT_PALETTE } from "../theme";
 import { supabase } from "../utils/supabase";
 
 const StudyContext = createContext(null);
