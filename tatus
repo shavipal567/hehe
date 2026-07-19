@@ -1,0 +1,30 @@
+* [33m491caa7[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mversion-2[m[33m, [m[1;31morigin/version-2[m[33m)[m Add UUID profile migration
+* [33m5507f58[m Add UUID profile migration
+* [33m2f52f3a[m[33m ([m[1;33mtag: [m[1;33mv2.1.0[m[33m, [m[1;33mtag: [m[1;33mv1-auth[m[33m)[m Add Supabase authentication with Google OAuth and persistent sessions
+* [33m302e73c[m[33m ([m[1;33mtag: [m[1;33mv2.0.0[m[33m, [m[1;31morigin/version-3[m[33m, [m[1;32mversion-3[m[33m)[m Release Version 2: Authentication, Groups and Leaderboards
+* [33m6b50ee9[m Rebuild groups backend with UUID based membership
+* [33m2164ff4[m Version 1 stable checkpoint
+* [33mf025fd0[m[33m ([m[1;33mtag: [m[1;33mv1.0.0[m[33m, [m[1;31morigin/version-1[m[33m, [m[1;32mversion-1[m[33m)[m Version 1: Add Supabase authentication and settings
+* [33me991efe[m[33m ([m[1;32mmain[m[33m)[m Current stable version before feature updates
+* [33m289eff0[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Add detailed minutes/seconds breakdown to stats
+* [33m7252abf[m Final adjustments
+* [33macee426[m Update
+* [33me76614e[m Revisions
+* [33mc4932d4[m Ignore logs folder
+* [33m4a964b0[m Tidy up
+* [33m4d4a9f5[m Update project info
+* [33m2153576[m Ignore lock backups
+* [33md6a63dc[m Small edit
+* [33m3bdb469[m Housekeeping
+* [33m0a91b95[m Update gitignore rules
+* [33m24294b4[m Code review changes
+* [33m54592d8[m Adjust content
+* [33mee9886e[m Ignore temp folder
+* [33me3415dc[m Improve docs
+* [33m82d7a95[m Update notes
+* [33m4da4191[m Add ignore rule
+* [33mc33a1c9[m Fix issue
+* [33m442a967[m Tweak wording
+* [33ma53d677[m Update ignore list
+* [33md120853[m Update readme
+* [33m845e991[m Final touches
