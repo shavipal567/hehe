@@ -1,10 +1,12 @@
-import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, ActivityIndicator } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import SkyBackground from "../components/SkyBackground";
 import { useAuth } from "../context/AuthContext";
 import { useStudy } from "../context/StudyContext";
 import { getTheme, cardShadow } from "../theme";
+import { supabase } from "../utils/supabase";
+import React, { useState} from "react";
+console.log("AuthScreen loaded");
 
 export default function AuthScreen() {
   const { darkMode } = useStudy();
@@ -49,6 +51,24 @@ export default function AuthScreen() {
       setBusy(false);
     }
   };
+ const handleGoogleSignIn = async () => {
+  setError("");
+
+  const redirectTo = window.location.hostname === "localhost"
+    ? window.location.origin
+    : "https://shavipal567.github.io/hehe/";
+
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo,
+    },
+  });
+
+  if (error) {
+    setError(error.message);
+  }
+};
 
   const switchMode = () => {
     setError("");
@@ -166,6 +186,15 @@ export default function AuthScreen() {
                 )}
               </LinearGradient>
             </TouchableOpacity>
+            <TouchableOpacity
+  style={styles.googleButton}
+  onPress={handleGoogleSignIn}
+  disabled={busy}
+>
+  <Text style={styles.googleText}>
+    Continue with Google
+  </Text>
+</TouchableOpacity>
 
             <TouchableOpacity onPress={switchMode} disabled={busy} style={styles.switchWrap}>
               <Text style={styles.switchText}>
@@ -215,6 +244,21 @@ function makeStyles(theme, darkMode) {
     marginTop: 20, borderRadius: 16,
     shadowColor: theme.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.35, shadowRadius: 12, elevation: 6,
   },
+  googleButton: {
+  marginTop: 14,
+  borderRadius: 16,
+  borderWidth: 1,
+  borderColor: "#ddd",
+  backgroundColor: "#fff",
+  paddingVertical: 15,
+  alignItems: "center",
+},
+
+googleText: {
+  fontSize: 16,
+  fontWeight: "700",
+  color: "#444",
+},
   buttonText: { color: "#fff", fontWeight: "700", fontSize: 16 },
   switchWrap: { marginTop: 16, alignItems: "center" },
   switchText: { color: theme.primary, fontWeight: "600", fontSize: 14 },

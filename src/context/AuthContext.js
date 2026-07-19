@@ -10,20 +10,28 @@ export function AuthProvider({ children }) {
   const subRef = useRef(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then((result) => {
-      const s = result?.data?.session ?? null;
-      setSession(s);
-      setUser(s?.user ?? null);
-    }).catch((e) => {
-      console.warn("Failed to restore session:", e);
-    }).finally(() => {
+    supabase.auth.getSession()
+    .then(({ data, error }) => {
+      console.log("INITIAL SESSION:", data.session);
+      console.log("GET SESSION ERROR:", error);
+
+      setSession(data.session);
+      setUser(data.session?.user ?? null);
+    })
+    .finally(() => {
       setAuthLoading(false);
     });
+   const {
+  data: { subscription },
+} = supabase.auth.onAuthStateChange((event, session) => {
+  console.log("AUTH EVENT:", event);
+  console.log("SESSION:", session);
 
-    subRef.current = supabase.auth.onAuthStateChange((_event, s) => {
-      setSession(s);
-      setUser(s?.user ?? null);
-    }).data.subscription;
+  setSession(session);
+  setUser(session?.user ?? null);
+});
+
+subRef.current = subscription;
 
     return () => {
       if (subRef.current) subRef.current.unsubscribe();
