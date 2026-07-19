@@ -1,5 +1,3 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-
 const KEYS = {
   SUBJECTS: "study_app_subjects",
   SESSIONS: "study_app_sessions",
@@ -13,26 +11,6 @@ const KEYS = {
   FRIENDS: "study_app_friends",
   BG_PALETTE: "study_app_bg_palette",
   DARK_MODE: "study_app_dark_mode",
-  MIGRATION_V3: "study_app_migration_v3",
 };
-
-export async function loadData(key, fallback) {
-  try {
-    const raw = await AsyncStorage.getItem(key);
-    if (raw === null) return fallback;
-    return JSON.parse(raw);
-  } catch (e) {
-    console.warn("Failed to load", key, e);
-    return fallback;
-  }
-}
-
-export async function saveData(key, value) {
-  try {
-    await AsyncStorage.setItem(key, JSON.stringify(value));
-  } catch (e) {
-    console.warn("Failed to save", key, e);
-  }
-}
 
 export { KEYS };
