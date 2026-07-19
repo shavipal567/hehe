@@ -3,16 +3,13 @@ import { KEYS } from "../utils/storage";
 import { SUBJECT_PALETTE } from "../theme";
 import { supabase } from "../utils/supabase";
 import { useAuth } from "./AuthContext";
-import {
-  migrateIfNeeded,
-  loadSubjects, loadSessions, loadTasks, loadNotes, loadGroupMembers,
-  getSetting, setSetting,
-  insertSubject, deleteSubject,
-  insertSession,
-  insertTask, updateTask, deleteTask,
-  insertNote, updateNote as updateNoteDb, deleteNote,
-  insertGroupMember, updateGroupMember, deleteGroupMember,
-} from "../utils/database";
+import { migrateIfNeeded } from "../utils/database";
+import { subjectRepository } from "../repositories/subjectRepository";
+import { sessionRepository } from "../repositories/sessionRepository";
+import { taskRepository } from "../repositories/taskRepository";
+import { noteRepository } from "../repositories/noteRepository";
+import { settingsRepository } from "../repositories/settingsRepository";
+import { groupMemberRepository } from "../repositories/groupMemberRepository";
 
 const StudyContext = createContext(null);
 
@@ -51,20 +48,20 @@ export function StudyProvider({ children }) {
         if (cancelled) return;
 
         const [subjRows, sessRows, taskRows, noteRows, gmRows] = await Promise.all([
-          loadSubjects(),
-          loadSessions(),
-          loadTasks(),
-          loadNotes(),
-          loadGroupMembers(),
+          subjectRepository.loadAll(),
+          sessionRepository.loadAll(),
+          taskRepository.loadAll(),
+          noteRepository.loadAll(),
+          groupMemberRepository.loadAll(),
         ]);
 
         const [profileVal, pomoVal, onboardedVal, friendsVal, bgVal, darkVal] = await Promise.all([
-          getSetting(KEYS.PROFILE, { name: "Dr. Shavi" }),
-          getSetting(KEYS.POMODORO, DEFAULT_POMODORO),
-          getSetting(KEYS.ONBOARDED, false),
-          getSetting(KEYS.FRIENDS, []),
-          getSetting(KEYS.BG_PALETTE, "pinkDusk"),
-          getSetting(KEYS.DARK_MODE, false),
+          settingsRepository.get(KEYS.PROFILE, { name: "Dr. Shavi" }),
+          settingsRepository.get(KEYS.POMODORO, DEFAULT_POMODORO),
+          settingsRepository.get(KEYS.ONBOARDED, false),
+          settingsRepository.get(KEYS.FRIENDS, []),
+          settingsRepository.get(KEYS.BG_PALETTE, "pinkDusk"),
+          settingsRepository.get(KEYS.DARK_MODE, false),
         ]);
 
         if (cancelled) return;
@@ -118,12 +115,12 @@ export function StudyProvider({ children }) {
     const subject = { id, name, color: colorToUse };
 
     setSubjects((prev) => [...prev, subject]);
-    insertSubject(subject).catch((e) => console.warn("Failed to save subject:", e.message));
+    subjectRepository.create(subject).catch((e) => console.warn("Failed to save subject:", e.message));
   }, []);
 
   const removeSubject = useCallback((id) => {
     setSubjects((prev) => prev.filter((s) => s.id !== id));
-    deleteSubject(id).catch((e) => console.warn("Failed to delete subject:", e.message));
+    subjectRepository.hardDelete(id).catch((e) => console.warn("Failed to delete subject:", e.message));
   }, []);
 
   // ------------------------------------------------------------------
@@ -134,7 +131,7 @@ export function StudyProvider({ children }) {
     const session = { id, subjectId, seconds, mode, date: todayStr() };
 
     setSessions((prev) => [...prev, session]);
-    insertSession(session).catch((e) => console.warn("Failed to save session:", e.message));
+    sessionRepository.create(session).catch((e) => console.warn("Failed to save session:", e.message));
   }, []);
 
   // ------------------------------------------------------------------
@@ -145,7 +142,7 @@ export function StudyProvider({ children }) {
     const todo = { id, text, done: false, date: date || todayStr() };
 
     setTodos((prev) => [...prev, todo]);
-    insertTask(todo).catch((e) => console.warn("Failed to save task:", e.message));
+    taskRepository.create(todo).catch((e) => console.warn("Failed to save task:", e.message));
   }, []);
 
   const toggleTodo = useCallback((id) => {
@@ -160,12 +157,12 @@ export function StudyProvider({ children }) {
       });
       return next;
     });
-    updateTask(id, { done: newDone }).catch((e) => console.warn("Failed to update task:", e.message));
+    taskRepository.update(id, { done: newDone }).catch((e) => console.warn("Failed to update task:", e.message));
   }, []);
 
   const removeTodo = useCallback((id) => {
     setTodos((prev) => prev.filter((t) => t.id !== id));
-    deleteTask(id).catch((e) => console.warn("Failed to delete task:", e.message));
+    taskRepository.hardDelete(id).catch((e) => console.warn("Failed to delete task:", e.message));
   }, []);
 
   // ------------------------------------------------------------------
@@ -176,7 +173,7 @@ export function StudyProvider({ children }) {
     const member = { id, name, color, totalSeconds: 0 };
 
     setGroupMembers((prev) => [...prev, member]);
-    insertGroupMember(member).catch((e) => console.warn("Failed to save group member:", e.message));
+    groupMemberRepository.create(member).catch((e) => console.warn("Failed to save group member:", e.message));
   }, []);
 
   const logGroupMemberTime = useCallback((id, seconds) => {
@@ -184,7 +181,7 @@ export function StudyProvider({ children }) {
       prev.map((m) => {
         if (m.id !== id) return m;
         const updated = { ...m, totalSeconds: m.totalSeconds + seconds };
-        updateGroupMember(id, { totalSeconds: updated.totalSeconds }).catch(
+        groupMemberRepository.update(id, { totalSeconds: updated.totalSeconds }).catch(
           (e) => console.warn("Failed to update group member:", e.message)
         );
         return updated;
@@ -194,7 +191,7 @@ export function StudyProvider({ children }) {
 
   const removeGroupMember = useCallback((id) => {
     setGroupMembers((prev) => prev.filter((m) => m.id !== id));
-    deleteGroupMember(id).catch((e) => console.warn("Failed to delete group member:", e.message));
+    groupMemberRepository.hardDelete(id).catch((e) => console.warn("Failed to delete group member:", e.message));
   }, []);
 
   // ------------------------------------------------------------------
@@ -204,10 +201,10 @@ export function StudyProvider({ children }) {
     if (name && name.trim()) {
       const updated = { ...profile, name: name.trim() };
       setProfileState(updated);
-      setSetting(KEYS.PROFILE, updated).catch((e) => console.warn("Failed to save profile:", e.message));
+      settingsRepository.set(KEYS.PROFILE, updated).catch((e) => console.warn("Failed to save profile:", e.message));
     }
     setOnboardedState(true);
-    setSetting(KEYS.ONBOARDED, true).catch((e) => console.warn("Failed to save onboarded:", e.message));
+    settingsRepository.set(KEYS.ONBOARDED, true).catch((e) => console.warn("Failed to save onboarded:", e.message));
   }, [profile]);
 
   // ------------------------------------------------------------------
@@ -222,17 +219,17 @@ export function StudyProvider({ children }) {
     const note = { id, text, color, rotation };
 
     setNotes((prev) => [...prev, note]);
-    insertNote(note).catch((e) => console.warn("Failed to save note:", e.message));
+    noteRepository.create(note).catch((e) => console.warn("Failed to save note:", e.message));
   }, []);
 
   const updateNote = useCallback((id, text) => {
     setNotes((prev) => prev.map((n) => (n.id === id ? { ...n, text } : n)));
-    updateNoteDb(id, text).catch((e) => console.warn("Failed to update note:", e.message));
+    noteRepository.update(id, { text }).catch((e) => console.warn("Failed to update note:", e.message));
   }, []);
 
   const removeNote = useCallback((id) => {
     setNotes((prev) => prev.filter((n) => n.id !== id));
-    deleteNote(id).catch((e) => console.warn("Failed to delete note:", e.message));
+    noteRepository.hardDelete(id).catch((e) => console.warn("Failed to delete note:", e.message));
   }, []);
 
   // ------------------------------------------------------------------
@@ -244,7 +241,7 @@ export function StudyProvider({ children }) {
     setFriends((prev) => {
       if (prev.includes(clean)) return prev;
       const next = [...prev, clean];
-      setSetting(KEYS.FRIENDS, next).catch((e) => console.warn("Failed to save friends:", e.message));
+      settingsRepository.set(KEYS.FRIENDS, next).catch((e) => console.warn("Failed to save friends:", e.message));
       return next;
     });
   }, []);
@@ -252,7 +249,7 @@ export function StudyProvider({ children }) {
   const removeFriend = useCallback((friendUsername) => {
     setFriends((prev) => {
       const next = prev.filter((f) => f !== friendUsername);
-      setSetting(KEYS.FRIENDS, next).catch((e) => console.warn("Failed to save friends:", e.message));
+      settingsRepository.set(KEYS.FRIENDS, next).catch((e) => console.warn("Failed to save friends:", e.message));
       return next;
     });
   }, []);
@@ -262,7 +259,7 @@ export function StudyProvider({ children }) {
   // ------------------------------------------------------------------
   const setProfile = useCallback((value) => {
     setProfileState(value);
-    setSetting(KEYS.PROFILE, value).catch((e) => console.warn("Failed to save profile:", e.message));
+    settingsRepository.set(KEYS.PROFILE, value).catch((e) => console.warn("Failed to save profile:", e.message));
   }, []);
 
   // ------------------------------------------------------------------
@@ -270,7 +267,7 @@ export function StudyProvider({ children }) {
   // ------------------------------------------------------------------
   const setPomodoroSettings = useCallback((value) => {
     setPomodoroSettingsState(value);
-    setSetting(KEYS.POMODORO, value).catch((e) => console.warn("Failed to save pomodoro settings:", e.message));
+    settingsRepository.set(KEYS.POMODORO, value).catch((e) => console.warn("Failed to save pomodoro settings:", e.message));
   }, []);
 
   // ------------------------------------------------------------------
@@ -278,12 +275,12 @@ export function StudyProvider({ children }) {
   // ------------------------------------------------------------------
   const setBgPalette = useCallback((id) => {
     setBgPaletteState(id);
-    setSetting(KEYS.BG_PALETTE, id).catch((e) => console.warn("Failed to save bg palette:", e.message));
+    settingsRepository.set(KEYS.BG_PALETTE, id).catch((e) => console.warn("Failed to save bg palette:", e.message));
   }, []);
 
   const setDarkMode = useCallback((value) => {
     setDarkModeState(value);
-    setSetting(KEYS.DARK_MODE, value).catch((e) => console.warn("Failed to save dark mode:", e.message));
+    settingsRepository.set(KEYS.DARK_MODE, value).catch((e) => console.warn("Failed to save dark mode:", e.message));
   }, []);
 
   // ------------------------------------------------------------------
