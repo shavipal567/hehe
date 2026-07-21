@@ -44,7 +44,6 @@ subRef.current = subscription;
     if (!error && data?.user) {
       supabase.from("profiles").insert({
         id: data.user.id,
-        username: data.user.id,
         display_name: "User",
         total_seconds: 0,
       }).then(({ error: insertError }) => {

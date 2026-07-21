@@ -1,11 +1,16 @@
-import { getSetting, setSetting } from "../utils/database";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export const settingsRepository = {
   async get(key, fallback = null) {
-    return getSetting(key, fallback);
+    try {
+      const value = await AsyncStorage.getItem(key);
+      return value ? JSON.parse(value) : fallback;
+    } catch {
+      return fallback;
+    }
   },
 
   async set(key, value) {
-    return setSetting(key, value);
+    await AsyncStorage.setItem(key, JSON.stringify(value));
   },
 };

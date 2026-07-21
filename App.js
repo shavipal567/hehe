@@ -61,6 +61,9 @@ function MainTabs() {
 function RootRouter() {
   const { loaded, onboarded, darkMode } = useStudy();
   const { user, authLoading } = useAuth();
+  console.log("loaded:", loaded);
+  console.log("authLoading:", authLoading);
+  console.log("user:", user);
 
   if (!loaded || authLoading) {
     return (

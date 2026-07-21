@@ -1,33 +1,80 @@
-import {
-  loadTasks,
-  insertTask,
-  updateTask,
-  deleteTask,
-} from "../utils/database";
+import { supabase } from "../utils/supabase";
 
 export const taskRepository = {
-  async loadAll() {
-    return loadTasks();
+  async loadAll(userId) {
+    const { data, error } = await supabase
+      .from("user_tasks")
+      .select("*")
+      .eq("user_id", userId)
+      .is("deleted_at", null)
+      .order("created_at");
+
+    if (error) throw error;
+
+    return (data || []).map((t) => ({
+      id: t.id,
+      text: t.text,
+      done: t.done,
+      priority: t.priority,
+      date: t.date,
+    }));
   },
 
-  async loadForDate(date) {
-    const all = await loadTasks();
-    return all.filter((t) => t.date === date);
+  async loadForDate(userId, date) {
+    const { data, error } = await supabase
+      .from("user_tasks")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("date", date)
+      .is("deleted_at", null)
+      .order("created_at");
+
+    if (error) throw error;
+
+    return data || [];
   },
 
-  async create(task) {
-    return insertTask(task);
+  async create(userId, task) {
+    const { error } = await supabase
+      .from("user_tasks")
+      .insert({
+        id: task.id,
+        user_id: userId,
+        text: task.text,
+        done: task.done,
+        priority: task.priority ?? null,
+        date: task.date,
+      });
+
+    if (error) throw error;
   },
 
   async update(id, changes) {
-    return updateTask(id, changes);
+    const { error } = await supabase
+      .from("user_tasks")
+      .update(changes)
+      .eq("id", id);
+
+    if (error) throw error;
   },
 
   async softDelete(id) {
-    return deleteTask(id);
+    const { error } = await supabase
+      .from("user_tasks")
+      .update({
+        deleted_at: new Date().toISOString(),
+      })
+      .eq("id", id);
+
+    if (error) throw error;
   },
 
   async hardDelete(id) {
-    return deleteTask(id);
+    const { error } = await supabase
+      .from("user_tasks")
+      .delete()
+      .eq("id", id);
+
+    if (error) throw error;
   },
 };

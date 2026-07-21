@@ -3,7 +3,6 @@ import { KEYS } from "../utils/storage";
 import { SUBJECT_PALETTE } from "../theme";
 import { supabase } from "../utils/supabase";
 import { useAuth } from "./AuthContext";
-import { migrateIfNeeded } from "../utils/database";
 import { subjectRepository } from "../repositories/subjectRepository";
 import { sessionRepository } from "../repositories/sessionRepository";
 import { taskRepository } from "../repositories/taskRepository";
@@ -12,7 +11,6 @@ import { settingsRepository } from "../repositories/settingsRepository";
 import { groupMemberRepository } from "../repositories/groupMemberRepository";
 
 const StudyContext = createContext(null);
-
 const DEFAULT_SUBJECTS = [];
 const DEFAULT_POMODORO = { workMinutes: 25, breakMinutes: 5 };
 
@@ -39,21 +37,26 @@ export function StudyProvider({ children }) {
   // On mount: init database, run migration (once), load all data
   // ------------------------------------------------------------------
   useEffect(() => {
+    console.log("StudyContext useEffect. user =", user);
+    if (!user){
+      console.log("No user -> setting loaded=true");
+      setLoaded(true);
+      return;
+  }
     let cancelled = false;
 
     (async () => {
       try {
-        await migrateIfNeeded();
-
-        if (cancelled) return;
+        console.log("1. Initializing...");
 
         const [subjRows, sessRows, taskRows, noteRows, gmRows] = await Promise.all([
-          subjectRepository.loadAll(),
-          sessionRepository.loadAll(),
-          taskRepository.loadAll(),
+          subjectRepository.loadAll(user?.id),
+          sessionRepository.loadAll(user?.id),
+          taskRepository.loadAll(user?.id),
           noteRepository.loadAll(),
           groupMemberRepository.loadAll(),
         ]);
+        console.log("2. Repositories loaded");
 
         const [profileVal, pomoVal, onboardedVal, friendsVal, bgVal, darkVal] = await Promise.all([
           settingsRepository.get(KEYS.PROFILE, { name: "Dr. Shavi" }),
@@ -63,6 +66,7 @@ export function StudyProvider({ children }) {
           settingsRepository.get(KEYS.BG_PALETTE, "pinkDusk"),
           settingsRepository.get(KEYS.DARK_MODE, false),
         ]);
+         console.log("3. Settings loaded");
 
         if (cancelled) return;
 
@@ -79,13 +83,15 @@ export function StudyProvider({ children }) {
         setDarkModeState(darkVal);
       } catch (e) {
         console.warn("Failed to initialize data:", e.message);
+        console.error("INITIALIZATION FAILED:", e);
       } finally {
+         console.log("4. Setting loaded=true");
         if (!cancelled) setLoaded(true);
       }
     })();
 
     return () => { cancelled = true; };
-  }, []);
+  }, [user]);
 
   // ------------------------------------------------------------------
   // Sync profile total_seconds to Supabase (preserved from v2)
@@ -109,14 +115,19 @@ export function StudyProvider({ children }) {
   // ------------------------------------------------------------------
   // CRUD: Subjects
   // ------------------------------------------------------------------
+  console.log("Current user:", user);
   const addSubject = useCallback((name, color) => {
+    console.log("STEP 1: addSubject called");
+
     const colorToUse = color || SUBJECT_PALETTE[Math.floor(Math.random() * SUBJECT_PALETTE.length)];
     const id = Date.now().toString();
     const subject = { id, name, color: colorToUse };
+    console.log("STEP 2:", user);
+    console.log("STEP 3:", subject);
 
     setSubjects((prev) => [...prev, subject]);
-    subjectRepository.create(subject).catch((e) => console.warn("Failed to save subject:", e.message));
-  }, []);
+    subjectRepository.create(user.id,subject).catch((e) => console.warn("Failed to save subject:", e.message));
+  }, [user]);
 
   const removeSubject = useCallback((id) => {
     setSubjects((prev) => prev.filter((s) => s.id !== id));
@@ -131,8 +142,8 @@ export function StudyProvider({ children }) {
     const session = { id, subjectId, seconds, mode, date: todayStr() };
 
     setSessions((prev) => [...prev, session]);
-    sessionRepository.create(session).catch((e) => console.warn("Failed to save session:", e.message));
-  }, []);
+    sessionRepository.create(user.id,session).catch((e) => console.warn("Failed to save session:", e.message));
+  }, [user]);
 
   // ------------------------------------------------------------------
   // CRUD: Todos
@@ -142,8 +153,8 @@ export function StudyProvider({ children }) {
     const todo = { id, text, done: false, date: date || todayStr() };
 
     setTodos((prev) => [...prev, todo]);
-    taskRepository.create(todo).catch((e) => console.warn("Failed to save task:", e.message));
-  }, []);
+    taskRepository.create(user.id,todo).catch((e) => console.warn("Failed to save task:", e.message));
+  }, [user]);
 
   const toggleTodo = useCallback((id) => {
     let newDone = false;
@@ -219,8 +230,8 @@ export function StudyProvider({ children }) {
     const note = { id, text, color, rotation };
 
     setNotes((prev) => [...prev, note]);
-    noteRepository.create(note).catch((e) => console.warn("Failed to save note:", e.message));
-  }, []);
+    noteRepository.create(user.id,note).catch((e) => console.warn("Failed to save note:", e.message));
+  }, [user]);
 
   const updateNote = useCallback((id, text) => {
     setNotes((prev) => prev.map((n) => (n.id === id ? { ...n, text } : n)));
