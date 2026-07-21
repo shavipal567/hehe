@@ -12,9 +12,6 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     supabase.auth.getSession()
     .then(({ data, error }) => {
-      console.log("INITIAL SESSION:", data.session);
-      console.log("GET SESSION ERROR:", error);
-
       setSession(data.session);
       setUser(data.session?.user ?? null);
     })
@@ -24,8 +21,7 @@ export function AuthProvider({ children }) {
    const {
   data: { subscription },
 } = supabase.auth.onAuthStateChange((event, session) => {
-  console.log("AUTH EVENT:", event);
-  console.log("SESSION:", session);
+  
 
   setSession(session);
   setUser(session?.user ?? null);

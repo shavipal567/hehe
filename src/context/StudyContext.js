@@ -37,9 +37,7 @@ export function StudyProvider({ children }) {
   // On mount: init database, run migration (once), load all data
   // ------------------------------------------------------------------
   useEffect(() => {
-    console.log("StudyContext useEffect. user =", user);
     if (!user){
-      console.log("No user -> setting loaded=true");
       setLoaded(true);
       return;
   }
@@ -47,16 +45,14 @@ export function StudyProvider({ children }) {
 
     (async () => {
       try {
-        console.log("1. Initializing...");
 
         const [subjRows, sessRows, taskRows, noteRows, gmRows] = await Promise.all([
           subjectRepository.loadAll(user?.id),
           sessionRepository.loadAll(user?.id),
           taskRepository.loadAll(user?.id),
-          noteRepository.loadAll(),
+          noteRepository.loadAll(user?.id),
           groupMemberRepository.loadAll(),
         ]);
-        console.log("2. Repositories loaded");
 
         const [profileVal, pomoVal, onboardedVal, friendsVal, bgVal, darkVal] = await Promise.all([
           settingsRepository.get(KEYS.PROFILE, { name: "Dr. Shavi" }),
@@ -66,7 +62,6 @@ export function StudyProvider({ children }) {
           settingsRepository.get(KEYS.BG_PALETTE, "pinkDusk"),
           settingsRepository.get(KEYS.DARK_MODE, false),
         ]);
-         console.log("3. Settings loaded");
 
         if (cancelled) return;
 
@@ -83,9 +78,7 @@ export function StudyProvider({ children }) {
         setDarkModeState(darkVal);
       } catch (e) {
         console.warn("Failed to initialize data:", e.message);
-        console.error("INITIALIZATION FAILED:", e);
       } finally {
-         console.log("4. Setting loaded=true");
         if (!cancelled) setLoaded(true);
       }
     })();
@@ -115,15 +108,11 @@ export function StudyProvider({ children }) {
   // ------------------------------------------------------------------
   // CRUD: Subjects
   // ------------------------------------------------------------------
-  console.log("Current user:", user);
   const addSubject = useCallback((name, color) => {
-    console.log("STEP 1: addSubject called");
 
     const colorToUse = color || SUBJECT_PALETTE[Math.floor(Math.random() * SUBJECT_PALETTE.length)];
     const id = Date.now().toString();
     const subject = { id, name, color: colorToUse };
-    console.log("STEP 2:", user);
-    console.log("STEP 3:", subject);
 
     setSubjects((prev) => [...prev, subject]);
     subjectRepository.create(user.id,subject).catch((e) => console.warn("Failed to save subject:", e.message));

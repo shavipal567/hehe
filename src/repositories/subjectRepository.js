@@ -9,6 +9,7 @@ export const subjectRepository = {
       .is("deleted_at", null)
       .order("created_at");
 
+
     if (error) throw error;
 
     return (data || []).map((s) => ({
@@ -18,20 +19,20 @@ export const subjectRepository = {
     }));
   },
 
-  async create(userId, subject) {
-    console.log("Saving subject:", userId, subject);
-    const { error } = await supabase
-      .from("user_subjects")
-      .insert({
-        id: subject.id,
-        user_id: userId,
-        name: subject.name,
-        color: subject.color,
-      });
-    console.log("Insert error:", error);
+async create(userId, subject) {
 
-    if (error) throw error;
-  },
+  const result = await supabase
+    .from("user_subjects")
+    .insert({
+      id: subject.id,
+      user_id: userId,
+      name: subject.name,
+      color: subject.color,
+    })
+    .select();
+
+  if (result.error) throw result.error;
+},
 
   async hardDelete(id) {
     const { error } = await supabase
