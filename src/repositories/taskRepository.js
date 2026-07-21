@@ -44,7 +44,8 @@ export const taskRepository = {
         done: task.done,
         priority: task.priority ?? null,
         date: task.date,
-      });
+      })
+      .select();
 
     if (error) throw error;
   },

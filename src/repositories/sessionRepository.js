@@ -40,7 +40,8 @@ export const sessionRepository = {
         seconds: session.seconds,
         mode: session.mode,
         date: session.date,
-      });
+      })
+      .select();
 
     if (error) throw error;
   },

@@ -28,7 +28,8 @@ export const noteRepository = {
         text: note.text,
         color: note.color,
         rotation: note.rotation,
-      });
+      })
+      .select();
 
     if (error) throw error;
   },
