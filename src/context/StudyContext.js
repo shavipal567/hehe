@@ -27,6 +27,8 @@ export function StudyProvider({ children }) {
   const [profile, setProfileState] = useState({ name: "Dr. Shavi" });
   const [pomodoroSettings, setPomodoroSettingsState] = useState(DEFAULT_POMODORO);
   const [notes, setNotes] = useState([]);
+  const [weekGoals, setWeekGoalsState] = useState({});
+  const [monthGoals, setMonthGoalsState] = useState({});
   const [friends, setFriends] = useState([]);
   const [bgPalette, setBgPaletteState] = useState("pinkDusk");
   const [darkMode, setDarkModeState] = useState(false);
@@ -54,15 +56,16 @@ export function StudyProvider({ children }) {
           groupMemberRepository.loadAll(),
         ]);
 
-        const [profileVal, pomoVal, onboardedVal, friendsVal, bgVal, darkVal] = await Promise.all([
+        const [profileVal, pomoVal, onboardedVal, friendsVal, bgVal, darkVal, weekGoalsVal, monthGoalsVal] = await Promise.all([
           settingsRepository.get(KEYS.PROFILE, { name: "Dr. Shavi" }),
           settingsRepository.get(KEYS.POMODORO, DEFAULT_POMODORO),
           settingsRepository.get(KEYS.ONBOARDED, false),
           settingsRepository.get(KEYS.FRIENDS, []),
           settingsRepository.get(KEYS.BG_PALETTE, "pinkDusk"),
           settingsRepository.get(KEYS.DARK_MODE, false),
+          settingsRepository.get(KEYS.WEEK_GOALS, {}),
+          settingsRepository.get(KEYS.MONTH_GOALS, {}),
         ]);
-
         if (cancelled) return;
 
         setSubjects(subjRows);
@@ -76,6 +79,8 @@ export function StudyProvider({ children }) {
         setFriends(friendsVal);
         setBgPaletteState(bgVal);
         setDarkModeState(darkVal);
+        setWeekGoalsState(weekGoalsVal);
+        setMonthGoalsState(monthGoalsVal);
       } catch (e) {
         console.warn("Failed to initialize data:", e.message);
       } finally {
@@ -126,12 +131,19 @@ export function StudyProvider({ children }) {
   // ------------------------------------------------------------------
   // CRUD: Sessions
   // ------------------------------------------------------------------
-  const addSession = useCallback((subjectId, seconds, mode = "stopwatch") => {
+  const addSession = useCallback((subjectId, seconds, mode = "stopwatch", startedAt = null) => {
     const id = Date.now().toString();
-    const session = { id, subjectId, seconds, mode, date: todayStr() };
+    const session = {
+      id,
+      subjectId,
+      seconds,
+      mode,
+      date: todayStr(),
+      startedAt: startedAt || new Date(Date.now() - seconds * 1000).toISOString(),
+    };
 
     setSessions((prev) => [...prev, session]);
-    sessionRepository.create(user.id,session).catch((e) => console.warn("Failed to save session:", e.message));
+    sessionRepository.create(user.id, session).catch((e) => console.warn("Failed to save session:", e.message));
   }, [user]);
 
   // ------------------------------------------------------------------
@@ -231,6 +243,67 @@ export function StudyProvider({ children }) {
     setNotes((prev) => prev.filter((n) => n.id !== id));
     noteRepository.hardDelete(id).catch((e) => console.warn("Failed to delete note:", e.message));
   }, []);
+  // ------------------------------------------------------------------
+  // Week goals (cumulative, per calendar week — not tied to daily todos)
+  // ------------------------------------------------------------------
+  const addWeekGoal = useCallback((weekKey, text) => {
+    const id = Date.now().toString();
+    setWeekGoalsState((prev) => {
+      const list = prev[weekKey] || [];
+      const next = { ...prev, [weekKey]: [...list, { id, text, done: false }] };
+      settingsRepository.set(KEYS.WEEK_GOALS, next).catch((e) => console.warn("Failed to save week goals:", e.message));
+      return next;
+    });
+  }, []);
+
+  const toggleWeekGoal = useCallback((weekKey, id) => {
+    setWeekGoalsState((prev) => {
+      const list = (prev[weekKey] || []).map((g) => (g.id === id ? { ...g, done: !g.done } : g));
+      const next = { ...prev, [weekKey]: list };
+      settingsRepository.set(KEYS.WEEK_GOALS, next).catch((e) => console.warn("Failed to save week goals:", e.message));
+      return next;
+    });
+  }, []);
+
+  const removeWeekGoal = useCallback((weekKey, id) => {
+    setWeekGoalsState((prev) => {
+      const list = (prev[weekKey] || []).filter((g) => g.id !== id);
+      const next = { ...prev, [weekKey]: list };
+      settingsRepository.set(KEYS.WEEK_GOALS, next).catch((e) => console.warn("Failed to save week goals:", e.message));
+      return next;
+    });
+  }, []);
+
+  // ------------------------------------------------------------------
+  // Month goals (cumulative, per calendar month — not tied to daily todos)
+  // ------------------------------------------------------------------
+  const addMonthGoal = useCallback((monthKey, text) => {
+    const id = Date.now().toString();
+    setMonthGoalsState((prev) => {
+      const list = prev[monthKey] || [];
+      const next = { ...prev, [monthKey]: [...list, { id, text, done: false }] };
+      settingsRepository.set(KEYS.MONTH_GOALS, next).catch((e) => console.warn("Failed to save month goals:", e.message));
+      return next;
+    });
+  }, []);
+
+  const toggleMonthGoal = useCallback((monthKey, id) => {
+    setMonthGoalsState((prev) => {
+      const list = (prev[monthKey] || []).map((g) => (g.id === id ? { ...g, done: !g.done } : g));
+      const next = { ...prev, [monthKey]: list };
+      settingsRepository.set(KEYS.MONTH_GOALS, next).catch((e) => console.warn("Failed to save month goals:", e.message));
+      return next;
+    });
+  }, []);
+
+  const removeMonthGoal = useCallback((monthKey, id) => {
+    setMonthGoalsState((prev) => {
+      const list = (prev[monthKey] || []).filter((g) => g.id !== id);
+      const next = { ...prev, [monthKey]: list };
+      settingsRepository.set(KEYS.MONTH_GOALS, next).catch((e) => console.warn("Failed to save month goals:", e.message));
+      return next;
+    });
+  }, []);
 
   // ------------------------------------------------------------------
   // Friends
@@ -288,13 +361,15 @@ export function StudyProvider({ children }) {
   // ------------------------------------------------------------------
   const value = {
     subjects, sessions, todos, groupMembers, profile, pomodoroSettings, notes, onboarded, loaded,
-    friends, bgPalette, darkMode,
+    friends, bgPalette, darkMode, weekGoals, monthGoals,
     addSession, addSubject, removeSubject,
     addTodo, toggleTodo, removeTodo,
     addGroupMember, logGroupMemberTime, removeGroupMember,
     addNote, updateNote, removeNote,
     addFriend, removeFriend, setBgPalette, setDarkMode,
     setProfile, setPomodoroSettings, completeOnboarding,
+    addWeekGoal, toggleWeekGoal, removeWeekGoal,
+    addMonthGoal, toggleMonthGoal, removeMonthGoal,
   };
 
   return <StudyContext.Provider value={value}>{children}</StudyContext.Provider>;

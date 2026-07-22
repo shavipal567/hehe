@@ -11,6 +11,8 @@ const KEYS = {
   FRIENDS: "study_app_friends",
   BG_PALETTE: "study_app_bg_palette",
   DARK_MODE: "study_app_dark_mode",
+  WEEK_GOALS: "week_goals",
+  MONTH_GOALS: "month_goals",
 };
 
 export { KEYS };

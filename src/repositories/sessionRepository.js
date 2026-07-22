@@ -17,6 +17,7 @@ export const sessionRepository = {
       seconds: s.seconds,
       mode: s.mode,
       date: s.date,
+      startedAt: s.started_at,
     }));
   },
 
@@ -40,6 +41,7 @@ export const sessionRepository = {
         seconds: session.seconds,
         mode: session.mode,
         date: session.date,
+        started_at: session.startedAt,
       })
       .select();
 

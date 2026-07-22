@@ -60,7 +60,7 @@ export default function NotesScreen() {
                 key={note.id}
                 style={[
                   styles.note,
-                  { backgroundColor: note.color, transform: [{ rotate: `${note.rotation}deg` }] },
+                  { backgroundColor: note.color,},
                 ]}
               >
                 {editingId === note.id ? (

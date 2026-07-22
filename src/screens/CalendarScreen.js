@@ -12,8 +12,19 @@ function toDateStr(y, m, d) {
   return `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 }
 
+function formatDetailed(totalSeconds) {
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = Math.floor(totalSeconds % 60);
+  const parts = [];
+  if (h > 0) parts.push(`${h}h`);
+  if (m > 0 || h > 0) parts.push(`${m}m`);
+  if (h === 0) parts.push(`${s}s`);
+  return parts.join(" ") || "0s";
+}
+
 export default function CalendarScreen() {
-  const { todos, sessions, addTodo, toggleTodo, removeTodo, darkMode } = useStudy();
+  const { todos, sessions, subjects, addTodo, toggleTodo, removeTodo, darkMode } = useStudy();
   const theme = getTheme(darkMode);
   const styles = makeStyles(theme, darkMode);
   const now = new Date();
@@ -25,12 +36,39 @@ export default function CalendarScreen() {
   const firstDayOfWeek = new Date(viewYear, viewMonth, 1).getDay();
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
 
+  const subjectById = useMemo(() => {
+    const m = new Map();
+    subjects.forEach((s) => m.set(s.id, s));
+    return m;
+  }, [subjects]);
+
   const activityByDate = useMemo(() => {
     const map = {};
     todos.forEach((t) => { map[t.date] = map[t.date] || { todos: 0, studied: false }; map[t.date].todos++; });
     sessions.forEach((s) => { map[s.date] = map[s.date] || { todos: 0, studied: false }; map[s.date].studied = true; });
     return map;
   }, [todos, sessions]);
+
+  // sessions for the currently selected day, and the per-subject breakdown
+  const daySessions = useMemo(
+    () => sessions.filter((s) => s.date === selectedDate),
+    [sessions, selectedDate]
+  );
+  const dayTotalSeconds = useMemo(
+    () => daySessions.reduce((sum, s) => sum + s.seconds, 0),
+    [daySessions]
+  );
+  const daySubjectBreakdown = useMemo(() => {
+    return subjects
+      .map((subj) => ({
+        ...subj,
+        total: daySessions.filter((s) => s.subjectId === subj.id).reduce((sum, s) => sum + s.seconds, 0),
+        pomo: daySessions.filter((s) => s.subjectId === subj.id && s.mode === "pomodoro").reduce((sum, s) => sum + s.seconds, 0),
+        stopwatch: daySessions.filter((s) => s.subjectId === subj.id && s.mode !== "pomodoro").reduce((sum, s) => sum + s.seconds, 0),
+      }))
+      .filter((s) => s.total > 0)
+      .sort((a, b) => b.total - a.total);
+  }, [daySessions, subjects]);
 
   const cells = [];
   for (let i = 0; i < firstDayOfWeek; i++) cells.push(null);
@@ -108,10 +146,42 @@ export default function CalendarScreen() {
               {isToday ? "Today" : new Date(selectedDate).toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" })}
             </Text>
 
+            {/* ----- Study summary for the selected day ----- */}
+            <View style={styles.studySummaryCard}>
+              <Text style={styles.studySummaryTotal}>{formatDetailed(dayTotalSeconds)}</Text>
+              <Text style={styles.studySummaryLabel}>studied this day</Text>
+
+              {daySubjectBreakdown.length === 0 ? (
+                <Text style={styles.studySummaryEmpty}>No study sessions logged for this day.</Text>
+              ) : (
+                <View style={{ marginTop: 12, width: "100%" }}>
+                  {daySubjectBreakdown.map((s) => {
+                    const pct = dayTotalSeconds ? Math.round((s.total / dayTotalSeconds) * 100) : 0;
+                    return (
+                      <View key={s.id} style={styles.studySubjectRow}>
+                        <View style={styles.studySubjectHeader}>
+                          <View style={[styles.dotLarge, { backgroundColor: s.color }]} />
+                          <Text style={styles.studySubjectName}>{s.name}</Text>
+                          <Text style={styles.studySubjectTotal}>{formatDetailed(s.total)}</Text>
+                        </View>
+                        <View style={styles.studyProgressTrack}>
+                          <View style={[styles.studyProgressFill, { width: `${pct}%`, backgroundColor: s.color }]} />
+                        </View>
+                        <Text style={styles.studySubjectSplit}>
+                          ⏱️ {formatDetailed(s.stopwatch)} · 🍅 {formatDetailed(s.pomo)}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
+            </View>
+
             <View style={styles.inputRow}>
               <TextInput
                 style={styles.input}
                 placeholder="Add a task for this day..."
+                placeholderTextColor={theme.muted}
                 value={text}
                 onChangeText={setText}
                 onSubmitEditing={handleAdd}
@@ -171,15 +241,52 @@ function makeStyles(theme, darkMode) {
     borderWidth: 1, borderColor: theme.cardBorder, ...cardShadow,
   },
   dayCardTitle: { fontSize: 17, fontWeight: "700", color: theme.text, marginBottom: 10 },
+
+  studySummaryCard: {
+    backgroundColor: darkMode ? "rgba(255,255,255,0.06)" : "rgba(242,87,141,0.06)",
+    borderRadius: 16,
+    padding: 16,
+    alignItems: "center",
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: theme.cardBorder,
+  },
+  studySummaryTotal: { fontSize: 26, fontWeight: "800", color: theme.text },
+  studySummaryLabel: { color: theme.muted, fontWeight: "600", fontSize: 12, marginTop: 2 },
+  studySummaryEmpty: { color: theme.muted, fontSize: 12, marginTop: 10, textAlign: "center" },
+  studySubjectRow: { marginBottom: 12, width: "100%" },
+  studySubjectHeader: { flexDirection: "row", alignItems: "center", marginBottom: 4 },
+  dotLarge: { width: 9, height: 9, borderRadius: 4.5, marginRight: 7 },
+  studySubjectName: { flex: 1, fontWeight: "700", color: theme.text, fontSize: 13 },
+  studySubjectTotal: { fontWeight: "700", color: theme.muted, fontSize: 12 },
+  studyProgressTrack: { height: 6, backgroundColor: "rgba(242,87,141,0.12)", borderRadius: 3, overflow: "hidden" },
+  studyProgressFill: { height: "100%", borderRadius: 3 },
+  studySubjectSplit: { color: theme.muted, fontSize: 10, marginTop: 3 },
+
   inputRow: { flexDirection: "row", marginBottom: 12 },
   input: {
-    flex: 1, backgroundColor: "#fff", borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, marginRight: 8,
+    flex: 1,
+    backgroundColor: darkMode ? "rgba(255,255,255,0.08)" : "#fff",
+    color: theme.text,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: theme.cardBorder,
   },
   addButton: { backgroundColor: theme.primary, borderRadius: 12, paddingHorizontal: 16, justifyContent: "center" },
   addButtonText: { color: "#fff", fontWeight: "700" },
   empty: { color: theme.muted, textAlign: "center", paddingVertical: 12 },
   todoRow: {
-    flexDirection: "row", alignItems: "center", backgroundColor: "#fff", borderRadius: 12, padding: 12, marginBottom: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: darkMode ? "rgba(255,255,255,0.08)" : "#fff",
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: theme.cardBorder,
   },
   checkbox: {
     width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: theme.primary,
