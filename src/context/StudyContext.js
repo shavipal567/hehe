@@ -9,6 +9,7 @@ import { taskRepository } from "../repositories/taskRepository";
 import { noteRepository } from "../repositories/noteRepository";
 import { settingsRepository } from "../repositories/settingsRepository";
 import { groupMemberRepository } from "../repositories/groupMemberRepository";
+import { getEffectiveDateStr } from "../utils/dayBoundary";
 
 const StudyContext = createContext(null);
 const DEFAULT_SUBJECTS = [];
@@ -32,6 +33,7 @@ export function StudyProvider({ children }) {
   const [friends, setFriends] = useState([]);
   const [bgPalette, setBgPaletteState] = useState("pinkDusk");
   const [darkMode, setDarkModeState] = useState(false);
+  const [dayStartHour, setDayStartHourState] = useState(0);
   const [onboarded, setOnboardedState] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
@@ -65,6 +67,7 @@ export function StudyProvider({ children }) {
           settingsRepository.get(KEYS.DARK_MODE, false),
           settingsRepository.get(KEYS.WEEK_GOALS, {}),
           settingsRepository.get(KEYS.MONTH_GOALS, {}),
+          settingsRepository.get(KEYS.DAY_START_HOUR, 0),
         ]);
         if (cancelled) return;
 
@@ -81,6 +84,7 @@ export function StudyProvider({ children }) {
         setDarkModeState(darkVal);
         setWeekGoalsState(weekGoalsVal);
         setMonthGoalsState(monthGoalsVal);
+        setDayStartHourState(dayStartHourVal);
       } catch (e) {
         console.warn("Failed to initialize data:", e.message);
       } finally {
@@ -138,24 +142,24 @@ export function StudyProvider({ children }) {
       subjectId,
       seconds,
       mode,
-      date: todayStr(),
+      date: getEffectiveDateStr(dayStartHour),
       startedAt: startedAt || new Date(Date.now() - seconds * 1000).toISOString(),
     };
 
     setSessions((prev) => [...prev, session]);
     sessionRepository.create(user.id, session).catch((e) => console.warn("Failed to save session:", e.message));
-  }, [user]);
+  }, [user, dayStartHour]);
 
   // ------------------------------------------------------------------
   // CRUD: Todos
   // ------------------------------------------------------------------
   const addTodo = useCallback((text, date) => {
     const id = Date.now().toString();
-    const todo = { id, text, done: false, date: date || todayStr() };
+    const todo = { id, text, done: false, date: date || getEffectiveDateStr(dayStartHour) };
 
     setTodos((prev) => [...prev, todo]);
     taskRepository.create(user.id,todo).catch((e) => console.warn("Failed to save task:", e.message));
-  }, [user]);
+  }, [user, dayStartHour]);
 
   const toggleTodo = useCallback((id) => {
     let newDone = false;
@@ -355,19 +359,23 @@ export function StudyProvider({ children }) {
     setDarkModeState(value);
     settingsRepository.set(KEYS.DARK_MODE, value).catch((e) => console.warn("Failed to save dark mode:", e.message));
   }, []);
+  const setDayStartHour = useCallback((hour) => {
+    setDayStartHourState(hour);
+    settingsRepository.set(KEYS.DAY_START_HOUR, hour).catch((e) => console.warn("Failed to save day start hour:", e.message));
+  }, []);
 
   // ------------------------------------------------------------------
   // Context value (identical API to original)
   // ------------------------------------------------------------------
   const value = {
     subjects, sessions, todos, groupMembers, profile, pomodoroSettings, notes, onboarded, loaded,
-    friends, bgPalette, darkMode, weekGoals, monthGoals,
+    friends, bgPalette, darkMode, weekGoals, monthGoals, dayStartHour,
     addSession, addSubject, removeSubject,
     addTodo, toggleTodo, removeTodo,
     addGroupMember, logGroupMemberTime, removeGroupMember,
     addNote, updateNote, removeNote,
     addFriend, removeFriend, setBgPalette, setDarkMode,
-    setProfile, setPomodoroSettings, completeOnboarding,
+    setProfile, setPomodoroSettings, completeOnboarding, setDayStartHour,
     addWeekGoal, toggleWeekGoal, removeWeekGoal,
     addMonthGoal, toggleMonthGoal, removeMonthGoal,
   };

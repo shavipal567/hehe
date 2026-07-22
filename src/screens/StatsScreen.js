@@ -3,30 +3,34 @@ import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity } fr
 import { useStudy } from "../context/StudyContext";
 import SkyBackground from "../components/SkyBackground";
 import { getTheme, cardShadow } from "../theme";
+import { getEffectiveDateStr } from "../utils/dayBoundary";
 
 // ---------- date/time helpers ----------
 function ymd(d) {
   return d.toISOString().slice(0, 10);
 }
-function todayStr() {
-  return ymd(new Date());
+function todayStr(dayStartHour = 0) {
+  return getEffectiveDateStr(dayStartHour);
 }
-function yesterdayStr() {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  return ymd(d);
+function yesterdayStr(dayStartHour = 0) {
+  const [y, m, d] = todayStr(dayStartHour).split("-").map(Number);
+  const dt = new Date(y, m - 1, d);
+  dt.setDate(dt.getDate() - 1);
+  return ymd(dt);
 }
-function last7Dates() {
+function last7Dates(dayStartHour = 0) {
+  const [y, m, d] = todayStr(dayStartHour).split("-").map(Number);
+  const base = new Date(y, m - 1, d);
   const dates = [];
   for (let i = 6; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    dates.push(ymd(d));
+    const dt = new Date(base);
+    dt.setDate(base.getDate() - i);
+    dates.push(ymd(dt));
   }
   return dates;
 }
-function currentYearMonth() {
-  return todayStr().slice(0, 7);
+function currentYearMonth(dayStartHour = 0) {
+  return todayStr(dayStartHour).slice(0, 7);
 }
 function formatDayLabel(dateStr) {
   const d = new Date(dateStr + "T00:00:00");
@@ -65,22 +69,22 @@ const RANGES = [
   { key: "lifetime", label: "Lifetime" },
 ];
 
-function filterByRange(sessions, range) {
+function filterByRange(sessions, range, dayStartHour = 0) {
   if (range === "lifetime") return sessions;
   if (range === "today") {
-    const t = todayStr();
+    const t = todayStr(dayStartHour);
     return sessions.filter((s) => s.date === t);
   }
   if (range === "yesterday") {
-    const y = yesterdayStr();
+    const y = yesterdayStr(dayStartHour);
     return sessions.filter((s) => s.date === y);
   }
   if (range === "week") {
-    const set = new Set(last7Dates());
+    const set = new Set(last7Dates(dayStartHour));
     return sessions.filter((s) => set.has(s.date));
   }
   if (range === "month") {
-    const ym = currentYearMonth();
+    const ym = currentYearMonth(dayStartHour);
     return sessions.filter((s) => s.date.slice(0, 7) === ym);
   }
   return sessions;
@@ -120,9 +124,9 @@ function groupByDate(sessions) {
 // ---------- dynamic chart bucket builder ----------
 // Builds bars appropriate to the selected range: hourly for today/yesterday,
 // daily for week/month, monthly for lifetime.
-function buildChartBuckets(sessions, range) {
+function buildChartBuckets(sessions, range, dayStartHour = 0) {
   if (range === "today" || range === "yesterday") {
-    const targetDate = range === "today" ? todayStr() : yesterdayStr();
+    const targetDate = range === "today" ? todayStr(dayStartHour) : yesterdayStr(dayStartHour);
     const buckets = Array.from({ length: 24 }, (_, h) => ({ key: `h${h}`, label: h % 3 === 0 ? `${h}` : "", total: 0 }));
     sessions
       .filter((s) => s.date === targetDate && s.startedAt)
@@ -134,7 +138,7 @@ function buildChartBuckets(sessions, range) {
   }
 
   if (range === "week") {
-    return last7Dates().map((date) => ({
+    return last7Dates(dayStartHour).map((date) => ({
       key: date,
       label: formatWeekday(date),
       total: sessions.filter((s) => s.date === date).reduce((sum, s) => sum + s.seconds, 0),
@@ -142,7 +146,7 @@ function buildChartBuckets(sessions, range) {
   }
 
   if (range === "month") {
-    const ym = currentYearMonth();
+    const ym = currentYearMonth(dayStartHour);
     const totalDays = new Date().getDate();
     const bars = [];
     for (let d = 1; d <= totalDays; d++) {
@@ -171,8 +175,8 @@ function buildChartBuckets(sessions, range) {
   }));
 }
 
-function DynamicBarChart({ sessions, range, theme, styles }) {
-  const buckets = useMemo(() => buildChartBuckets(sessions, range), [sessions, range]);
+function DynamicBarChart({ sessions, range, theme, styles, dayStartHour = 0 }) {
+  const buckets = useMemo(() => buildChartBuckets(sessions, range, dayStartHour), [sessions, range, dayStartHour]);
   const maxSeconds = Math.max(...buckets.map((b) => b.total), 1);
   const isScrollable = range === "month" || range === "lifetime";
   const barWidth = range === "today" || range === "yesterday" ? 8 : range === "week" ? 18 : 12;
@@ -218,7 +222,7 @@ function DynamicBarChart({ sessions, range, theme, styles }) {
 }
 
 export default function StatsScreen() {
-  const { sessions, subjects, darkMode } = useStudy();
+  const { sessions, subjects, darkMode,dayStartHour} = useStudy();
   const theme = getTheme(darkMode);
   const styles = makeStyles(theme, darkMode);
 
@@ -236,7 +240,7 @@ export default function StatsScreen() {
   }, [subjects]);
 
   // ---------- Overview data ----------
-  const rangedSessions = useMemo(() => filterByRange(sessions, range), [sessions, range]);
+  const rangedSessions = useMemo(() => filterByRange(sessions, range, dayStartHour), [sessions, range, dayStartHour]);
   const overview = useMemo(() => aggregate(rangedSessions, subjects), [rangedSessions, subjects]);
 
   // ---------- Daily history ----------
@@ -248,8 +252,7 @@ export default function StatsScreen() {
     () => sessions.filter((s) => s.subjectId === selectedSubjectId),
     [sessions, selectedSubjectId]
   );
-  const subjectRangedSessions = useMemo(() => filterByRange(subjectSessions, subjectRange), [subjectSessions, subjectRange]);
-  const subjectOverview = useMemo(() => aggregate(subjectRangedSessions, []), [subjectRangedSessions]);
+  const subjectRangedSessions = useMemo(() => filterByRange(subjectSessions, subjectRange, dayStartHour), [subjectSessions, subjectRange, dayStartHour]);
   const subjectByDate = useMemo(() => groupByDate(subjectSessions), [subjectSessions]);
 
   const lifetimeTotal = useMemo(() => sessions.reduce((sum, s) => sum + s.seconds, 0), [sessions]);
@@ -300,7 +303,7 @@ export default function StatsScreen() {
                 <Text style={styles.totalLabel}>{RANGES.find((r) => r.key === range)?.label} total</Text>
               </View>
 
-              <DynamicBarChart sessions={sessions} range={range} theme={theme} styles={styles} />
+              <DynamicBarChart sessions={sessions} range={range} theme={theme} styles={styles} dayStartHour={dayStartHour} />
 
               <View style={styles.splitRow}>
                 <View style={styles.splitCard}>
@@ -455,7 +458,7 @@ export default function StatsScreen() {
                         </Text>
                       </View>
 
-                      <DynamicBarChart sessions={subjectSessions} range={subjectRange} theme={theme} styles={styles} />
+                      <DynamicBarChart sessions={subjectSessions} range={subjectRange} theme={theme} styles={styles} dayStartHour={dayStartHour} />
 
                       <View style={styles.splitRow}>
                         <View style={styles.splitCard}>

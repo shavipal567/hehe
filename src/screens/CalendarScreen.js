@@ -5,6 +5,7 @@ import {
 import { useStudy } from "../context/StudyContext";
 import SkyBackground from "../components/SkyBackground";
 import { getTheme, cardShadow } from "../theme";
+import { getEffectiveDateStr } from "../utils/dayBoundary";
 
 const WEEKDAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
 
@@ -24,13 +25,13 @@ function formatDetailed(totalSeconds) {
 }
 
 export default function CalendarScreen() {
-  const { todos, sessions, subjects, addTodo, toggleTodo, removeTodo, darkMode } = useStudy();
+  const { todos, sessions, subjects, addTodo, toggleTodo, removeTodo, darkMode, dayStartHour } = useStudy();
   const theme = getTheme(darkMode);
   const styles = makeStyles(theme, darkMode);
   const now = new Date();
   const [viewYear, setViewYear] = useState(now.getFullYear());
   const [viewMonth, setViewMonth] = useState(now.getMonth()); // 0-indexed
-  const [selectedDate, setSelectedDate] = useState(toDateStr(now.getFullYear(), now.getMonth(), now.getDate()));
+  const [selectedDate, setSelectedDate] = useState(getEffectiveDateStr(dayStartHour));
   const [text, setText] = useState("");
 
   const firstDayOfWeek = new Date(viewYear, viewMonth, 1).getDay();
@@ -85,7 +86,7 @@ export default function CalendarScreen() {
 
   const monthLabel = new Date(viewYear, viewMonth, 1).toLocaleDateString(undefined, { month: "long", year: "numeric" });
   const dayTodos = todos.filter((t) => t.date === selectedDate);
-  const isToday = selectedDate === toDateStr(now.getFullYear(), now.getMonth(), now.getDate());
+  const isToday = selectedDate === getEffectiveDateStr(dayStartHour);
 
   const handleAdd = () => {
     if (!text.trim()) return;
@@ -122,7 +123,7 @@ export default function CalendarScreen() {
               const dateStr = toDateStr(viewYear, viewMonth, d);
               const activity = activityByDate[dateStr];
               const selected = dateStr === selectedDate;
-              const todayCell = dateStr === toDateStr(now.getFullYear(), now.getMonth(), now.getDate());
+              const todayCell = dateStr === getEffectiveDateStr(dayStartHour);
               return (
                 <TouchableOpacity key={i} style={styles.cell} onPress={() => setSelectedDate(dateStr)}>
                   <View style={[

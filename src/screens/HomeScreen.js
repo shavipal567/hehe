@@ -7,6 +7,7 @@ import SkyBackground from "../components/SkyBackground";
 import PomodoroRing from "../components/PomodoroRing";
 import { startPomodoroAlarm, stopPomodoroAlarm } from "../utils/alarm";
 import { getTheme, cardShadow } from "../theme";
+import { getEffectiveDateStr } from "../utils/dayBoundary";
 import SessionActionSheet from "../components/SessionActionSheet";
 const { width: SCREEN_W } = Dimensions.get("window");
 const RING_SIZE = Math.min(SCREEN_W * 0.78, 300);
@@ -26,7 +27,7 @@ function formatCountdown(totalSeconds) {
 }
 
 export default function HomeScreen() {
-  const { subjects, addSession, sessions, pomodoroSettings, darkMode } = useStudy();
+  const { subjects, addSession, sessions, pomodoroSettings, darkMode, dayStartHour } = useStudy();
   const theme = getTheme(darkMode);
   const styles = makeStyles(theme, darkMode);
   const [selectedId, setSelectedId] = useState(subjects[0]?.id);
@@ -105,7 +106,7 @@ export default function HomeScreen() {
   }, [running, recompute]);
 
   const todaySeconds = sessions
-    .filter((s) => s.date === new Date().toISOString().slice(0, 10))
+    .filter((s) => s.date === getEffectiveDateStr(dayStartHour))
     .reduce((sum, s) => sum + s.seconds, 0);
 
   const handleStartStopStopwatch = () => {

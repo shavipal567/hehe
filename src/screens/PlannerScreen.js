@@ -5,6 +5,7 @@ import {
 import { useStudy } from "../context/StudyContext";
 import SkyBackground from "../components/SkyBackground";
 import { getTheme, cardShadow } from "../theme";
+import { getEffectiveDateStr } from "../utils/dayBoundary";
 
 function toDateStr(y, m, d) {
   return `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
@@ -16,8 +17,10 @@ function formatShortLabel(dateStr) {
 
 // Sunday-start week containing today, offset by `weekOffset` weeks.
 // weekKey = the Sunday's date string — a stable, unique identifier for that week.
-function getWeekInfo(weekOffset) {
-  const base = new Date();
+function getWeekInfo(weekOffset, dayStartHour = 0) {
+  const effectiveStr = getEffectiveDateStr(dayStartHour);
+  const [ey, em, ed] = effectiveStr.split("-").map(Number);
+  const base = new Date(ey, em - 1, ed);
   base.setDate(base.getDate() + weekOffset * 7);
   const dayOfWeek = base.getDay();
   const sunday = new Date(base);
@@ -29,8 +32,10 @@ function getWeekInfo(weekOffset) {
   return { weekKey, rangeLabel };
 }
 
-function getMonthInfo(monthOffset) {
-  const base = new Date();
+function getMonthInfo(monthOffset, dayStartHour = 0) {
+  const effectiveStr = getEffectiveDateStr(dayStartHour);
+  const [ey, em, ed] = effectiveStr.split("-").map(Number);
+  const base = new Date(ey, em - 1, ed);
   base.setMonth(base.getMonth() + monthOffset);
   const y = base.getFullYear();
   const m = base.getMonth();
@@ -44,7 +49,7 @@ export default function PlannerScreen() {
     weekGoals, monthGoals,
     addWeekGoal, toggleWeekGoal, removeWeekGoal,
     addMonthGoal, toggleMonthGoal, removeMonthGoal,
-    darkMode,
+    darkMode,dayStartHour,
   } = useStudy();
   const theme = getTheme(darkMode);
   const styles = makeStyles(theme, darkMode);
@@ -54,9 +59,8 @@ export default function PlannerScreen() {
   const [monthOffset, setMonthOffset] = useState(0);
   const [text, setText] = useState("");
 
-  const { weekKey, rangeLabel } = useMemo(() => getWeekInfo(weekOffset), [weekOffset]);
-  const { monthKey, label: monthLabel } = useMemo(() => getMonthInfo(monthOffset), [monthOffset]);
-
+  const { weekKey, rangeLabel } = useMemo(() => getWeekInfo(weekOffset, dayStartHour), [weekOffset, dayStartHour]);
+  const { monthKey, label: monthLabel } = useMemo(() => getMonthInfo(monthOffset, dayStartHour), [monthOffset, dayStartHour]);
   const currentWeekGoals = weekGoals[weekKey] || [];
   const currentMonthGoals = monthGoals[monthKey] || [];
 

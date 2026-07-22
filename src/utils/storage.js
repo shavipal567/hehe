@@ -13,6 +13,7 @@ const KEYS = {
   DARK_MODE: "study_app_dark_mode",
   WEEK_GOALS: "week_goals",
   MONTH_GOALS: "month_goals",
+  DAY_START_HOUR: "day_start_hour",
 };
 
 export { KEYS };

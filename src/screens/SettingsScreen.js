@@ -5,9 +5,10 @@ import SkyBackground from "../components/SkyBackground";
 import { useAuth } from "../context/AuthContext";
 import { useStudy } from "../context/StudyContext";
 import { getTheme, cardShadow } from "../theme";
+import { formatHour12 } from "../utils/dayBoundary";
 
 export default function SettingsScreen({ onBack }) {
-  const { darkMode } = useStudy();
+  const { darkMode, dayStartHour, setDayStartHour } = useStudy();
   const { user, signOut } = useAuth();
   const theme = getTheme(darkMode);
   const styles = makeStyles(theme, darkMode);
@@ -16,6 +17,13 @@ export default function SettingsScreen({ onBack }) {
   const handleLogout = async () => {
     setBusy(true);
     await signOut();
+  };
+
+  const adjustDayStart = (delta) => {
+    let next = dayStartHour + delta;
+    if (next < 0) next = 23;
+    if (next > 23) next = 0;
+    setDayStartHour(next);
   };
 
   return (
@@ -33,6 +41,27 @@ export default function SettingsScreen({ onBack }) {
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Email</Text>
             <Text style={styles.infoValue}>{user?.email ?? "—"}</Text>
+          </View>
+
+          <Text style={styles.label}>Day Boundary</Text>
+          <View style={styles.dayStartRow}>
+            <Text style={styles.dayStartHint}>
+              Sessions and tasks logged before this time count toward the previous day. Default is midnight.
+            </Text>
+            <View style={styles.stepperRow}>
+              <TouchableOpacity style={styles.stepperButton} onPress={() => adjustDayStart(-1)}>
+                <Text style={styles.stepperButtonText}>−</Text>
+              </TouchableOpacity>
+              <Text style={styles.stepperValue}>{formatHour12(dayStartHour)}</Text>
+              <TouchableOpacity style={styles.stepperButton} onPress={() => adjustDayStart(1)}>
+                <Text style={styles.stepperButtonText}>+</Text>
+              </TouchableOpacity>
+            </View>
+            {dayStartHour !== 0 && (
+              <TouchableOpacity onPress={() => setDayStartHour(0)}>
+                <Text style={styles.resetText}>Reset to midnight</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           <TouchableOpacity style={styles.buttonWrap} onPress={handleLogout} disabled={busy} activeOpacity={0.85}>
@@ -77,6 +106,22 @@ function makeStyles(theme, darkMode) {
   },
   infoLabel: { color: theme.muted, fontWeight: "600", fontSize: 12 },
   infoValue: { color: theme.text, fontWeight: "700", fontSize: 15, marginTop: 4 },
+
+  dayStartRow: {
+    backgroundColor: darkMode ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.03)",
+    borderRadius: 14,
+    padding: 14,
+  },
+  dayStartHint: { color: theme.muted, fontSize: 12, lineHeight: 17, marginBottom: 12 },
+  stepperRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 18 },
+  stepperButton: {
+    width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center",
+    backgroundColor: theme.primary,
+  },
+  stepperButtonText: { color: "#fff", fontSize: 20, fontWeight: "800" },
+  stepperValue: { color: theme.text, fontWeight: "800", fontSize: 17, minWidth: 90, textAlign: "center" },
+  resetText: { color: theme.primary, fontWeight: "700", fontSize: 12, textAlign: "center", marginTop: 10 },
+
   button: {
     borderRadius: 16, paddingVertical: 16, alignItems: "center",
   },
