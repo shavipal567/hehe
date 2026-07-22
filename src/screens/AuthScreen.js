@@ -6,7 +6,6 @@ import { useStudy } from "../context/StudyContext";
 import { getTheme, cardShadow } from "../theme";
 import { supabase } from "../utils/supabase";
 import React, { useState} from "react";
-console.log("AuthScreen loaded");
 
 export default function AuthScreen() {
   const { darkMode } = useStudy();

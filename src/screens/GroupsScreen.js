@@ -399,9 +399,6 @@ const handleDelete = async () => {
     p_user_id: user.id,
   });
 
-  console.log("data:", data);
-  console.log("error:", error);
-
   if (data) {
     alert("Group deleted.");
     onBack();

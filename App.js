@@ -61,10 +61,6 @@ function MainTabs() {
 function RootRouter() {
   const { loaded, onboarded, darkMode } = useStudy();
   const { user, authLoading } = useAuth();
-  console.log("loaded:", loaded);
-  console.log("authLoading:", authLoading);
-  console.log("user:", user);
-
   if (!loaded || authLoading) {
     return (
       <View style={{ flex: 1, backgroundColor: darkMode ? "#1B1428" : "#FFF0F6", alignItems: "center", justifyContent: "center" }}>
