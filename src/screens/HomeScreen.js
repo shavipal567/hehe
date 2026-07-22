@@ -144,7 +144,7 @@ export default function HomeScreen() {
   setRunning(true);
   setStopwatchPaused(false);
 };
-  const handleOpenEditDuration = () => {
+  const handleOpenEditDuration = (target) => {
     setEditTarget(target);
     const mins = Math.floor(displaySeconds / 60);
     const secs = displaySeconds % 60;
